@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>One Night In… Ashgrove House</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=0.5.0">
+</head>
+<body>
+<div id="color-grade"></div>
+<div id="film-grain"></div>
+<div id="weather-layer"></div>
+<div id="heartbeat-vignette"></div>
+<div id="game">
+  <div id="hud">
+    <div id="hud-time">7:00 PM</div>
+    <div id="hud-location">Ashgrove House — Drive</div>
+    <div id="hud-danger" title="Danger level — each notch is one point of aggression">
+      <span id="hud-danger-label">— QUIET —</span>
+      <span class="hud-danger-meter" id="hud-danger-meter" aria-label="Aggression"></span>
+    </div>
+    <div id="hud-right">
+      <button id="btn-tts-toggle" title="Read aloud (toggle)">🔊</button>
+      <button id="btn-help" title="Help / How to play">?</button>
+      <button id="btn-journal" title="Evidence Journal">J</button>
+      <button id="btn-map" title="Map">M</button>
+      <button id="btn-settings" title="Settings">⚙</button>
+    </div>
+  </div>
+
+  <div id="scene">
+    <div id="scene-art"></div>
+    <div id="scene-title"></div>
+    <div id="scene-description"></div>
+    <div id="scene-hotspots"></div>
+  </div>
+
+  <div id="narration"></div>
+
+  <div id="choices"></div>
+
+  <div id="inventory">
+    <div class="inv-label">TOOLS</div>
+    <div id="inventory-items"></div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-map">
+    <div class="overlay-inner">
+      <h2>Ashgrove House</h2>
+      <div id="map-grid"></div>
+      <button class="btn-close" data-close="overlay-map">Close</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-journal">
+    <div class="overlay-inner">
+      <div class="journal-tabs">
+        <button class="jtab active" data-jtab="evidence">Evidence</button>
+        <button class="jtab" data-jtab="people">People</button>
+      </div>
+      <div id="journal-tab-evidence" class="jtab-panel active">
+        <h2>Evidence Journal</h2>
+        <div id="journal-entries"></div>
+        <div id="journal-calder"></div>
+      </div>
+      <div id="journal-tab-people" class="jtab-panel">
+        <h2>Dramatis Personae</h2>
+        <div class="people-entry">
+          <span class="people-name">ELIAS ASHGROVE</span>
+          <span class="people-years">1835 – 1902</span>
+          <p class="people-bio">Patriarch. Built the house in 1887, over the foundation of the 1851 Meeting-House. Founded the trust three years before his death. The executor signs his initials.</p>
+        </div>
+        <div class="people-entry">
+          <span class="people-name">MARGARET ASHGROVE</span>
+          <span class="people-years">1840 – 1922</span>
+          <p class="people-bio">Elias's wife. Spiritualist. Held séances for twenty years and kept a diary. Wrote: "We did not build a home, we built a cage." Her visitor at the table gave only one name: ELIZA.</p>
+        </div>
+        <div class="people-entry">
+          <span class="people-name">THOMAS ASHGROVE</span>
+          <span class="people-years">1862 – 1938</span>
+          <p class="people-bio">Elias's son. Inherited. Continued the séances under a thin veneer of skepticism. Outlived his first wife and half of his second family.</p>
+        </div>
+        <div class="people-entry">
+          <span class="people-name">EVELYN ASHGROVE</span>
+          <span class="people-years">1889 – 1923</span>
+          <p class="people-bio">Thomas's first wife. Died in the nursery, clawing at the east wall. The coroner's report says <em>undetermined</em>. Calder was told she fell.</p>
+        </div>
+        <div class="people-entry">
+          <span class="people-name">ADELINE ASHGROVE</span>
+          <span class="people-years">1907 – 1974</span>
+          <p class="people-bio">Thomas's second wife. Mother to the twins. Recorded tapes in the study until her death. The tape labeled 4/17/73 names Eliza.</p>
+        </div>
+        <div class="people-entry">
+          <span class="people-name">HENRY &amp; CLARA ASHGROVE</span>
+          <span class="people-years">born 1927 — lost 1935</span>
+          <p class="people-bio">Adeline's twins. Disappeared on the same night. Officially drowned; no bodies recovered. Adeline said they had been <em>taken into the walls</em>.</p>
+        </div>
+        <div class="people-entry">
+          <span class="people-name">ELIZA HALLIWELL</span>
+          <span class="people-years">1827 – 1851</span>
+          <p class="people-bio">The schoolmistress lost in the Meeting-House fire with nine children in her care. Her name is, or became, the collective name for the nineteen dead. She has been waiting in the walls of the new house since the foundations were laid.</p>
+        </div>
+        <div class="people-entry">
+          <span class="people-name">MR. CALDER</span>
+          <span class="people-years">born 1953</span>
+          <p class="people-bio">Groundskeeper. Worked for the trust since boyhood; his father did too. Keeper of the official stories. Catch him in his inconsistencies — they are not malicious, but they are not accurate.</p>
+        </div>
+        <div class="people-entry">
+          <span class="people-name">THE EXECUTOR</span>
+          <span class="people-years">unknown</span>
+          <p class="people-bio">Hired you for the night. Calder has never met him. Letters signed E.A. Elias died in 1902.</p>
+        </div>
+      </div>
+      <button class="btn-close" data-close="overlay-journal">Close</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-tool">
+    <div class="overlay-inner">
+      <h2 id="tool-title"></h2>
+      <div id="tool-body"></div>
+      <button class="btn-close" data-close="overlay-tool">Put Away</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-verdict">
+    <div class="overlay-inner">
+      <h2>Verdict — Sunrise</h2>
+      <p>The executor requires a verdict. Choose carefully.</p>
+      <div class="verdict-section">
+        <div class="verdict-label">Your verdict</div>
+        <div id="verdict-choices">
+          <button data-verdict="haunted">Haunted</button>
+          <button data-verdict="partial">Partially Haunted</button>
+          <button data-verdict="debunked">Debunked</button>
+        </div>
+      </div>
+      <div class="verdict-section" id="verdict-name-section">
+        <div class="verdict-label">If you wish to <em>name</em> the principal entity, do so here (optional)</div>
+        <input type="text" id="verdict-name-input" autocomplete="off" placeholder="e.g. Eliza, Evelyn, the Quiet Twin, none">
+        <p class="verdict-hint">A correct identification, supported by your evidence, is the difference between a competent investigation and a complete one.</p>
+      </div>
+      <div id="verdict-result"></div>
+      <button class="btn-close hidden" id="verdict-restart">New Investigation</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-help">
+    <div class="overlay-inner">
+      <h2>How to investigate</h2>
+      <div id="help-tabs">
+        <button class="help-tab active" data-tab="howto">Goal</button>
+        <button class="help-tab" data-tab="basics">Basics</button>
+        <button class="help-tab" data-tab="tools">Tools</button>
+        <button class="help-tab" data-tab="danger">Danger</button>
+        <button class="help-tab" data-tab="verdict">Verdict</button>
+      </div>
+      <div id="help-body"></div>
+      <button class="btn-close" data-close="overlay-help">Close</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-scare">
+    <div class="overlay-inner" id="scare-body">
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-howto">
+    <div class="overlay-inner howto-inner">
+      <div class="howto-goal-label">YOUR GOAL</div>
+      <h1 class="howto-goal">Spend one night in Ashgrove House. At sunrise, tell the executor what you believe: <span class="goal-hi">haunted, partially haunted, or not haunted at all.</span></h1>
+
+      <p class="howto-lede long-only">You have five hours of night, nine instruments, and one unreliable witness. The truth is randomized each game. Guess wrong — or die before dawn — and you don't get paid.</p>
+      <p class="howto-lede short-only">Five hours. Nine tools. One night. Get the verdict right.</p>
+
+      <div class="howto-grid">
+        <div class="howto-card">
+          <div class="howto-step">1 · Listen to Calder</div>
+          <p class="long-only">The groundskeeper greets you at the door and tells you the family history. <strong>Some of what he says is wrong.</strong> Find the documents that prove it — library, study, kitchen. Each one you catch pays.</p>
+          <p class="short-only">Calder lies. Find documents that prove it. Each contradiction caught pays.</p>
+        </div>
+        <div class="howto-card">
+          <div class="howto-step">2 · Use the instruments</div>
+          <p class="long-only">After Calder leaves, the door locks and <strong>nine tools</strong> appear at the bottom of the screen. Hover them to see what each does. Click to use. Walk between rooms. Evidence logs automatically to the journal.</p>
+          <p class="short-only">After Calder leaves, nine tools unlock. Click to use. Evidence auto-logs.</p>
+        </div>
+        <div class="howto-card">
+          <div class="howto-step">3 · Sit still. Speak aloud.</div>
+          <p class="long-only">Every room has a <strong>Rest</strong>, <strong>Sit in Silence</strong>, and <strong>Call Out</strong> action. Use them. Not everything comes through an instrument — sometimes the house answers only when you stop looking.</p>
+          <p class="short-only">Use Rest, Silence, and Call Out in each room. Not all evidence comes from tools.</p>
+        </div>
+        <div class="howto-card">
+          <div class="howto-step">4 · Deliver your verdict</div>
+          <p class="long-only">At sunrise, click the desk in the entry hall. Pick Haunted, Partially Haunted, or Debunked. <strong>You will not be told if you were right until after you commit.</strong></p>
+          <p class="short-only">At sunrise, click the desk. Pick one of three verdicts. You can't un-pick.</p>
+        </div>
+      </div>
+
+      <div class="howto-warnings">
+        <div class="howto-warning-item">
+          <div class="hw-title">⚠ THE HOUSE CAN KILL YOU</div>
+          <p class="long-only">Provoking it — knocking on walls, placing the EM pump, shouting at it — raises a hidden <strong>aggression meter</strong> shown at the top of the screen. Watch it. At the highest tier, on a truly haunted run, your next action can end the investigation permanently.</p>
+          <p class="short-only">Provocation raises the aggression meter (top of screen). Max tier on a Haunted run = your next action can kill you.</p>
+        </div>
+        <div class="howto-warning-item">
+          <div class="hw-title">⚠ A LETTER AT MIDNIGHT</div>
+          <p class="long-only">At 12:00 AM, regardless of where you are, something slides under the front door. Read it. It tells you everything you need to know to understand the rest of the night.</p>
+          <p class="short-only">At 12:00 AM, a letter slides under the front door. Read it. It explains everything.</p>
+        </div>
+      </div>
+
+      <div class="howto-keybinds">
+        <div class="keybind"><kbd>J</kbd> Journal</div>
+        <div class="keybind"><kbd>M</kbd> Map</div>
+        <div class="keybind"><kbd>?</kbd> Help</div>
+        <div class="keybind"><kbd>Esc</kbd> Pause</div>
+        <div class="keybind"><kbd>🔊</kbd> Read aloud</div>
+      </div>
+
+      <p class="howto-if-nothing">If you remember nothing else: <em>use every tool in every room, read every document, and at sunrise tell the truth as best you can see it.</em></p>
+
+      <div style="text-align:center">
+        <button id="btn-howto-begin">I understand. Begin the investigation.</button>
+        <label class="warn-skip">
+          <input type="checkbox" id="chk-skip-howto">
+          <span>Don't show this again.</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div id="intertitle" class="hidden">
+    <div class="intertitle-inner">
+      <div class="intertitle-ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+      <div class="intertitle-prefix" id="intertitle-prefix"></div>
+      <div class="intertitle-body" id="intertitle-body"></div>
+      <div class="intertitle-ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+    </div>
+  </div>
+
+  <div id="jumpscare" class="hidden">
+    <div id="jumpscare-face"></div>
+    <div id="jumpscare-grain"></div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-death">
+    <div class="overlay-inner">
+      <h2 id="death-title" class="death-stage" style="color:#c05050">You did not survive the night.</h2>
+      <p id="death-cause" class="death-stage"></p>
+      <p id="death-flavor" class="death-stage" style="color:#8a7565;margin-top:16px;font-style:italic"></p>
+      <button id="death-restart" class="death-stage">Try again</button>
+    </div>
+  </div>
+
+  <div id="tooltip" class="hidden"></div>
+  <div id="milestone-toast" class="hidden" aria-live="polite">
+    <div class="toast-prefix" id="toast-prefix"></div>
+    <div class="toast-body" id="toast-body"></div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-settings">
+    <div class="overlay-inner">
+      <h2 id="settings-title">Settings</h2>
+      <div class="settings-row">
+        <label>Master volume</label>
+        <input type="range" id="set-vol-master" min="0" max="100" value="70">
+        <span id="set-vol-master-v">70</span>
+      </div>
+      <div class="settings-row">
+        <label>Ambient volume</label>
+        <input type="range" id="set-vol-ambient" min="0" max="100" value="60">
+        <span id="set-vol-ambient-v">60</span>
+      </div>
+      <div class="settings-row">
+        <label>Text size</label>
+        <select id="set-text-size">
+          <option value="small">Small</option>
+          <option value="medium" selected>Medium</option>
+          <option value="large">Large</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <label>Contrast</label>
+        <select id="set-contrast">
+          <option value="normal" selected>Normal</option>
+          <option value="high">High contrast</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <label>Reduce motion</label>
+        <input type="checkbox" id="set-reduce-motion">
+      </div>
+      <div class="settings-row" title="Swap the long Gothic prose for short summaries. Atmosphere-light, reading-light.">
+        <label>Concise mode (TL;DR)</label>
+        <input type="checkbox" id="set-concise">
+      </div>
+      <div class="settings-row">
+        <label>Temperature</label>
+        <select id="set-temp-unit">
+          <option value="F">Fahrenheit (°F)</option>
+          <option value="C">Celsius (°C)</option>
+        </select>
+      </div>
+      <hr style="border-color:#2a2022;margin:16px 0">
+      <h3 style="color:#d4c9b8;font-size:13px;letter-spacing:2px;margin-bottom:10px">NARRATION</h3>
+      <div class="settings-row">
+        <label>Read aloud</label>
+        <input type="checkbox" id="set-tts-enabled">
+      </div>
+      <div class="settings-row">
+        <label>Voice</label>
+        <select id="set-tts-gender">
+          <option value="male">Male (Price-like)</option>
+          <option value="female">Female (Steele-like)</option>
+        </select>
+        <span id="tts-voice-label" style="font-size:11px;color:#5a4850"></span>
+      </div>
+      <div class="settings-row">
+        <label>Rate</label>
+        <input type="range" id="set-tts-rate" min="60" max="130" value="90">
+        <span id="set-tts-rate-v">90</span>
+      </div>
+      <div class="settings-row">
+        <label>Pitch</label>
+        <input type="range" id="set-tts-pitch" min="50" max="120" value="90">
+        <span id="set-tts-pitch-v">90</span>
+      </div>
+      <div class="settings-row">
+        <label>Voice volume</label>
+        <input type="range" id="set-tts-volume" min="0" max="100" value="85">
+        <span id="set-tts-volume-v">85</span>
+      </div>
+      <div class="settings-row">
+        <label></label>
+        <button id="btn-tts-test">Test voice</button>
+      </div>
+      <hr style="border-color:#2a2022;margin:16px 0">
+      <h3 style="color:#d4c9b8;font-size:13px;letter-spacing:2px;margin-bottom:10px">SPEAK WITH THE HOUSE (optional)</h3>
+      <p style="font-size:12px;color:#8a7565;margin-bottom:10px;font-style:italic">
+        Optional: connect a free AI key so the Ovilus and the "Speak to the house" action reply with words generated live.
+        No key = game works exactly as before (random words). Your key is stored only in this browser.
+      </p>
+      <details class="ai-help-details">
+        <summary>How do I set this up? (free, ~60 seconds)</summary>
+        <div class="ai-help-body">
+          <p><strong>Recommended: Google Gemini (free, no credit card)</strong></p>
+          <ol>
+            <li>Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> in a new tab.</li>
+            <li>Sign in with any Google account.</li>
+            <li>Click <strong>"Create API Key"</strong>, then <strong>"Create API key in new project"</strong>.</li>
+            <li>Copy the key (it starts with <code>AIza…</code>).</li>
+            <li>Come back here, paste it into the <strong>API key</strong> field below, check <strong>Enable AI</strong>, and click <strong>Test connection</strong>. You should see <em>✓ connected</em>.</li>
+          </ol>
+          <p style="margin-top:8px"><strong>What it changes:</strong></p>
+          <ul>
+            <li>The <strong>Ovilus</strong> tool now speaks words generated live (in character as the voice of the dead) instead of picking from a fixed list.</li>
+            <li>A new <strong>"Speak to the house"</strong> action appears in the Entry Hall and Wine Cellar. You can ask the house anything in plain English; it replies in the voice of the Gothic horror genre. Limited to 3 utterances per night.</li>
+            <li>Raises aggression more than using a tool — the house dislikes being addressed directly.</li>
+          </ul>
+          <p style="margin-top:8px"><strong>Other providers:</strong></p>
+          <ul>
+            <li><strong>Groq</strong> — also free. Sign up at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>. Very fast.</li>
+            <li><strong>OpenAI</strong> — requires a paid account at platform.openai.com.</li>
+            <li><strong>Anthropic Claude</strong> — requires a paid account at console.anthropic.com.</li>
+          </ul>
+          <p style="margin-top:8px"><strong>Is my key safe?</strong> Yes. It's stored only in this browser's <em>localStorage</em>, on this device. It's sent only to the provider you chose, directly from your browser. No server of ours ever sees it. Clear the field or uncheck "Enable AI" at any time to disable.</p>
+          <p style="margin-top:8px;color:#8a7565"><em>If you leave this blank, the game works exactly as it did before. No feature is gated behind this.</em></p>
+        </div>
+      </details>
+      <div class="settings-row">
+        <label>Enable AI</label>
+        <input type="checkbox" id="set-ai-enabled">
+      </div>
+      <div class="settings-row">
+        <label>Provider</label>
+        <select id="set-ai-provider">
+          <option value="gemini">Google Gemini (free)</option>
+          <option value="groq">Groq (free)</option>
+          <option value="openai">OpenAI (paid)</option>
+          <option value="anthropic">Anthropic Claude (paid)</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <label>API key</label>
+        <input type="password" id="set-ai-key" autocomplete="off" placeholder="paste your key" style="flex:1">
+      </div>
+      <div class="settings-row">
+        <label></label>
+        <button id="btn-ai-test">Test connection</button>
+        <span id="ai-test-result" style="font-size:12px;color:#8a7565;margin-left:8px"></span>
+      </div>
+      <div class="settings-row">
+        <label></label>
+        <span id="ai-provider-hint" style="font-size:11px;color:#6a5a4a;font-style:italic"></span>
+      </div>
+      <hr style="border-color:#2a2022;margin:16px 0">
+      <div class="settings-row">
+        <button id="btn-save-game">Save game</button>
+        <button id="btn-load-game">Load game</button>
+        <button id="btn-new-game">New investigation</button>
+      </div>
+      <div class="settings-row">
+        <button id="btn-delete-save" class="danger-btn">Delete saved game</button>
+        <button id="btn-reset-all" class="danger-btn">Reset everything</button>
+      </div>
+      <div id="settings-debug-panel" class="hidden">
+        <hr style="border-color:#2a2022;margin:16px 0">
+        <h3 style="color:#e0b040">Debug / Testing tools</h3>
+        <p class="debug-intro">These controls let you test every beat of the game without playing through. They will break the illusion — use only for testing.</p>
+
+        <div class="debug-group">
+          <div class="debug-group-title">Current run</div>
+          <div class="settings-row">
+            <label>Truth right now</label>
+            <span id="debug-truth">-</span>
+          </div>
+          <p class="debug-help">Every new game randomly picks one of three answers: <strong>Haunted</strong> (ghosts are real), <strong>Partially Haunted</strong> (only one ghost, the rest is coincidence), or <strong>Debunked</strong> (nothing is real, it's drafts and pipes). Your verdict at dawn must match this.</p>
+          <div class="settings-row">
+            <label>Force the answer</label>
+            <button data-force-truth="haunted">Haunted</button>
+            <button data-force-truth="partial">Partial</button>
+            <button data-force-truth="debunked">Debunked</button>
+          </div>
+          <p class="debug-help">Override the random roll. Useful for testing all three endings.</p>
+          <div class="settings-row">
+            <label></label>
+            <button id="debug-show-truth">Whisper the truth to me</button>
+          </div>
+        </div>
+
+        <div class="debug-group">
+          <div class="debug-group-title">Skip past the intro</div>
+          <div class="settings-row">
+            <label>Walkthrough</label>
+            <button id="debug-skip-walkthrough">Dismiss Calder, unlock tools</button>
+          </div>
+          <p class="debug-help">Mr. Calder is the groundskeeper. At the start of the game he walks you through the house. This button sends him home immediately so you can test investigation mechanics.</p>
+          <div class="settings-row">
+            <label>Calder's lies</label>
+            <button id="debug-catch-calder">Auto-catch all 5 inconsistencies</button>
+          </div>
+          <p class="debug-help">Calder tells you some false versions of the family history. Catching him in them (by finding contradicting documents) pays out at the verdict. This button shortcuts that.</p>
+        </div>
+
+        <div class="debug-group">
+          <div class="debug-group-title">Travel &amp; time</div>
+          <div class="settings-row">
+            <label>Go to room</label>
+            <select id="debug-room-jump" style="flex:1"></select>
+            <button id="debug-room-go">Go</button>
+          </div>
+          <div class="settings-row">
+            <label>Skip forward</label>
+            <button data-skip="60">+1 hour</button>
+            <button data-skip="180">+3 hours</button>
+            <button data-skip-to-sunrise="1">Jump to sunrise</button>
+          </div>
+          <div class="settings-row">
+            <label>Set exact time</label>
+            <input type="range" id="debug-time-slider" min="0" max="720" value="0" style="flex:1">
+            <span id="debug-time-readout">7:00 PM</span>
+          </div>
+          <p class="debug-help">Time advances with every action. Sunrise (5:30 AM) triggers the verdict. Midnight triggers the mandatory letter.</p>
+        </div>
+
+        <div class="debug-group">
+          <div class="debug-group-title">House aggression</div>
+          <p class="debug-help">The house gets angrier when you provoke it (EM pump, knocking, threats on the spirit box). The top-bar label shows the tier: <strong>Quiet → Watching → Close → In the Room</strong>. On a haunted run, reaching "In the Room" means the next bad move can kill you.</p>
+          <div class="settings-row">
+            <label>Set aggression</label>
+            <button id="debug-agg-plus">+1</button>
+            <button id="debug-agg-max">Max (9/10)</button>
+            <button id="debug-agg-reset">Reset to 0</button>
+          </div>
+        </div>
+
+        <div class="debug-group">
+          <div class="debug-group-title">Force a scare</div>
+          <div class="settings-row">
+            <label>Atmospheric scare</label>
+            <button id="debug-flavor-scare">Fire a random flavor scare</button>
+          </div>
+          <p class="debug-help">A small scripted event — narration + sound, no damage. What normally fires when aggression is "Watching".</p>
+          <div class="settings-row">
+            <label>Dodge-or-die prompt</label>
+            <button id="debug-threat">Force a threat prompt</button>
+          </div>
+          <p class="debug-help">A full modal with three choices. Pick the wrong one on a haunted run and you die. What normally fires at "Close" tier.</p>
+          <div class="settings-row">
+            <label>Instant death</label>
+            <button id="debug-kill">Kill the player</button>
+          </div>
+          <p class="debug-help">Skips the trigger — opens the death sequence (jump scare → epitaph → Try Again) directly.</p>
+          <div class="settings-row">
+            <label>Specific scripted scare</label>
+            <select id="debug-scare-pick" style="flex:1"></select>
+            <button id="debug-scare-fire">Fire it</button>
+          </div>
+          <p class="debug-help">Every named scripted moment in the game (thimble on the stairs, breathing wall, 3AM figure, etc.) can be fired on demand from this list.</p>
+        </div>
+
+        <div class="debug-group">
+          <div class="debug-group-title">Plot beats</div>
+          <div class="settings-row">
+            <label>Midnight letter</label>
+            <button id="debug-midnight">Slide it under the door now</button>
+          </div>
+          <p class="debug-help">At 12:00 AM a letter arrives explaining the whole plot. This re-fires it for testing.</p>
+          <div class="settings-row">
+            <label>Final confrontation</label>
+            <button id="debug-eliza">Summon Eliza now</button>
+          </div>
+          <p class="debug-help">The 4 AM climax on Haunted runs where the house speaks directly to you. Auto-satisfies all preconditions.</p>
+          <div class="settings-row">
+            <label>Ending</label>
+            <button id="debug-sunrise">Jump straight to the verdict screen</button>
+          </div>
+        </div>
+
+        <div class="debug-group">
+          <div class="debug-group-title">Journal &amp; documents</div>
+          <div class="settings-row">
+            <label>Seed fake evidence</label>
+            <button id="debug-seed-5">Add 5 entries</button>
+            <button id="debug-seed-15">Add 15 entries</button>
+            <button id="debug-clear-evidence">Clear everything</button>
+          </div>
+          <p class="debug-help">Populate the evidence journal for testing verdict scoring.</p>
+          <div class="settings-row">
+            <label>Reveal entities</label>
+            <button id="debug-reveal-all">Mark all 12 entities as seen</button>
+          </div>
+          <div class="settings-row">
+            <label>Documents</label>
+            <button id="debug-read-midnight">Read the midnight letter</button>
+            <button id="debug-read-all-docs">Mark every document read</button>
+          </div>
+        </div>
+
+        <div class="debug-group">
+          <div class="debug-group-title">Technical</div>
+          <div class="settings-row">
+            <label>Export state</label>
+            <button id="debug-dump-state">Copy state JSON to clipboard</button>
+          </div>
+          <p class="debug-help">Useful for bug reports — paste into an issue.</p>
+        </div>
+      </div>
+      <div id="settings-debug-prompt" class="hidden">
+        <hr style="border-color:#2a2022;margin:16px 0">
+        <div class="settings-row">
+          <label>Password</label>
+          <input type="password" id="debug-password" autocomplete="off">
+          <button id="debug-submit">OK</button>
+          <button id="debug-cancel">Cancel</button>
+        </div>
+      </div>
+      <button class="btn-close" data-close="overlay-settings">Close</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-dialogue">
+    <div class="overlay-inner">
+      <h2 id="dialogue-speaker"></h2>
+      <div id="dialogue-line"></div>
+      <div id="dialogue-choices"></div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-mainmenu">
+    <svg class="title-backdrop" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <radialGradient id="mm-sky" cx="50%" cy="25%" r="80%">
+          <stop offset="0%" stop-color="#2a1828"/>
+          <stop offset="25%" stop-color="#180c1c"/>
+          <stop offset="55%" stop-color="#0c0612"/>
+          <stop offset="100%" stop-color="#020104"/>
+        </radialGradient>
+        <radialGradient id="mm-moon" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#f8e8c8" stop-opacity="0.95"/>
+          <stop offset="20%" stop-color="#f0d8a8" stop-opacity="0.7"/>
+          <stop offset="55%" stop-color="#d0a080" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#080410" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="mm-moon-surface" cx="40%" cy="38%" r="55%">
+          <stop offset="0%" stop-color="#fff4d8"/>
+          <stop offset="60%" stop-color="#f4e4c0"/>
+          <stop offset="100%" stop-color="#c8a878"/>
+        </radialGradient>
+        <radialGradient id="mm-haze" cx="50%" cy="80%" r="60%">
+          <stop offset="0%" stop-color="#1a1222" stop-opacity="0.5"/>
+          <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="mm-vignette" cx="50%" cy="50%" r="60%">
+          <stop offset="50%" stop-color="#000" stop-opacity="0"/>
+          <stop offset="100%" stop-color="#000" stop-opacity="0.7"/>
+        </radialGradient>
+        <linearGradient id="mm-house" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0c0604"/>
+          <stop offset="100%" stop-color="#1a0e06"/>
+        </linearGradient>
+        <radialGradient id="mm-window" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ffc870" stop-opacity="0.85"/>
+          <stop offset="100%" stop-color="#3a1808" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1600" height="900" fill="url(#mm-sky)"/>
+      <circle cx="1200" cy="200" r="220" fill="url(#mm-moon)"/>
+      <circle cx="1200" cy="200" r="95" fill="url(#mm-moon-surface)"/>
+      <g fill="#a88858" opacity="0.42">
+        <ellipse cx="1178" cy="180" rx="14" ry="10"/>
+        <ellipse cx="1222" cy="170" rx="8" ry="6"/>
+        <ellipse cx="1180" cy="220" rx="18" ry="8"/>
+        <ellipse cx="1230" cy="225" rx="10" ry="7"/>
+        <ellipse cx="1205" cy="240" rx="6" ry="4"/>
+        <ellipse cx="1162" cy="203" rx="5" ry="4"/>
+        <ellipse cx="1242" cy="195" rx="4" ry="3"/>
+      </g>
+      <path d="M 1260 170 Q 1295 200 1260 230 Q 1220 220 1220 200 Q 1220 180 1260 170 Z" fill="#8a6838" opacity="0.25"/>
+      <g fill="#fff4d8">
+        <circle cx="80" cy="50" r="0.8" opacity="0.5"/><circle cx="145" cy="95" r="1.4" opacity="0.85"/>
+        <circle cx="210" cy="140" r="0.6" opacity="0.4"/><circle cx="285" cy="72" r="1" opacity="0.7"/>
+        <circle cx="348" cy="210" r="0.8" opacity="0.55"/><circle cx="418" cy="45" r="1.6" opacity="0.9"/>
+        <circle cx="488" cy="165" r="0.5" opacity="0.4"/><circle cx="556" cy="88" r="1.2" opacity="0.8"/>
+        <circle cx="622" cy="32" r="0.7" opacity="0.55"/><circle cx="686" cy="202" r="1" opacity="0.75"/>
+        <circle cx="752" cy="118" r="0.4" opacity="0.35"/><circle cx="814" cy="65" r="1.5" opacity="0.88"/>
+        <circle cx="878" cy="148" r="0.8" opacity="0.6"/><circle cx="942" cy="48" r="0.6" opacity="0.5"/>
+        <circle cx="1008" cy="98" r="1.1" opacity="0.75"/><circle cx="1070" cy="188" r="0.7" opacity="0.5"/>
+        <circle cx="1340" cy="50" r="1.4" opacity="0.85"/><circle cx="1405" cy="135" r="0.8" opacity="0.6"/>
+        <circle cx="1460" cy="68" r="0.5" opacity="0.45"/><circle cx="1528" cy="200" r="1" opacity="0.7"/>
+        <circle cx="1572" cy="118" r="0.6" opacity="0.5"/><circle cx="35" cy="180" r="1.1" opacity="0.75"/>
+        <circle cx="240" cy="295" r="0.7" opacity="0.55"/><circle cx="470" cy="310" r="0.5" opacity="0.4"/>
+        <circle cx="765" cy="290" r="0.9" opacity="0.6"/><circle cx="1090" cy="320" r="0.6" opacity="0.45"/>
+        <circle cx="1390" cy="310" r="0.8" opacity="0.55"/>
+      </g>
+      <g fill="#fff4d8" opacity="0.45">
+        <path d="M 418 45 L 420 42 L 418 38 L 416 42 Z"/>
+        <path d="M 814 65 L 816 62 L 814 58 L 812 62 Z"/>
+        <path d="M 1340 50 L 1342 47 L 1340 43 L 1338 47 Z"/>
+        <path d="M 145 95 L 147 92 L 145 88 L 143 92 Z"/>
+      </g>
+      <g opacity="0.3" fill="#2a2030">
+        <ellipse cx="1080" cy="220" rx="200" ry="18"/>
+        <ellipse cx="1340" cy="245" rx="170" ry="14"/>
+        <ellipse cx="1250" cy="160" rx="120" ry="10"/>
+      </g>
+      <path d="M 0 430 Q 200 380 400 420 Q 600 360 800 410 Q 1000 370 1200 400 Q 1400 380 1600 410 L 1600 600 L 0 600 Z" fill="#04020a" opacity="0.6"/>
+      <g opacity="0.95">
+        <path d="M 560 510 L 560 720 L 740 720 L 740 510 Z" fill="url(#mm-house)"/>
+        <path d="M 570 430 L 730 430 L 650 360 Z" fill="url(#mm-house)"/>
+        <path d="M 570 430 L 730 430 L 730 520 L 570 520 Z" fill="url(#mm-house)"/>
+        <path d="M 540 510 L 760 510 L 880 610 L 420 610 Z" fill="#08050a"/>
+        <path d="M 540 510 L 760 510 L 780 530 L 520 530 Z" fill="#040207" opacity="0.7"/>
+        <path d="M 420 610 L 420 720 L 560 720 L 560 610 Z" fill="url(#mm-house)"/>
+        <path d="M 740 610 L 740 720 L 880 720 L 880 610 Z" fill="url(#mm-house)"/>
+        <path d="M 420 720 L 880 720 L 880 735 L 420 735 Z" fill="#020105"/>
+        <path d="M 580 330 L 600 330 L 600 440 L 580 440 Z" fill="#08040a"/>
+        <path d="M 574 324 L 606 324 L 612 334 L 568 334 Z" fill="#08040a"/>
+        <path d="M 720 380 L 738 380 L 738 460 L 720 460 Z" fill="#0a0604"/>
+        <path d="M 715 374 L 743 374 L 748 384 L 710 384 Z" fill="#0a0604"/>
+        <path d="M 588 322 Q 600 300 588 278 Q 605 260 592 240" stroke="#2a2030" stroke-width="3" fill="none" opacity="0.25"/>
+        <rect x="638" y="390" width="24" height="32" fill="url(#mm-window)" opacity="0.6"/>
+        <path d="M 638 390 L 650 380 L 662 390 Z" fill="#08040a"/>
+        <rect x="588" y="445" width="22" height="44" fill="url(#mm-window)"/>
+        <rect x="628" y="445" width="22" height="44" fill="#140604" opacity="0.8"/>
+        <rect x="668" y="445" width="22" height="44" fill="url(#mm-window)" opacity="0.55"/>
+        <rect x="708" y="445" width="22" height="44" fill="#140604" opacity="0.8"/>
+        <rect x="580" y="540" width="26" height="72" fill="url(#mm-window)"/>
+        <rect x="694" y="540" width="26" height="72" fill="url(#mm-window)"/>
+        <rect x="470" y="650" width="20" height="40" fill="url(#mm-window)" opacity="0.7"/>
+        <rect x="515" y="650" width="20" height="40" fill="#140604" opacity="0.7"/>
+        <rect x="770" y="650" width="20" height="40" fill="url(#mm-window)" opacity="0.5"/>
+        <rect x="815" y="650" width="20" height="40" fill="#140604" opacity="0.7"/>
+        <path d="M 628 615 L 628 720 L 672 720 L 672 615 Q 672 605 650 600 Q 628 605 628 615 Z" fill="#1a0604"/>
+        <path d="M 632 620 L 632 718 L 668 718 L 668 620 Q 668 612 650 608 Q 632 612 632 620 Z" fill="#2a0e08"/>
+        <circle cx="664" cy="670" r="1.5" fill="#d4a878"/>
+        <ellipse cx="650" cy="608" rx="38" ry="14" fill="url(#mm-window)" opacity="0.55"/>
+        <path d="M 610 720 L 690 720 L 695 730 L 605 730 Z" fill="#0a0604"/>
+        <path d="M 602 730 L 698 730 L 705 742 L 595 742 Z" fill="#060203"/>
+      </g>
+      <g opacity="0.5">
+        <path d="M 0 620 Q 60 580 100 600 Q 160 560 200 590 Q 260 560 310 600 Q 380 570 430 600 L 430 720 L 0 720 Z" fill="#06040c"/>
+        <path d="M 920 600 Q 980 570 1040 595 Q 1110 555 1180 590 Q 1260 560 1340 595 Q 1430 565 1510 590 Q 1570 570 1600 590 L 1600 720 L 920 720 Z" fill="#06040c"/>
+      </g>
+      <g opacity="0.85" fill="#030106" stroke="#030106" stroke-width="2">
+        <path d="M 180 780 L 205 640 L 198 550 L 215 560 L 210 500 L 225 520 L 220 470 L 232 490 L 238 440 L 246 470 L 255 430 L 255 500 L 270 510 L 260 540 L 275 570 L 265 600 L 280 630 L 250 800 Z"/>
+        <line x1="215" y1="560" x2="170" y2="500" stroke-width="3"/>
+        <line x1="225" y1="520" x2="180" y2="460" stroke-width="3"/>
+        <line x1="246" y1="470" x2="278" y2="420" stroke-width="3"/>
+        <line x1="270" y1="510" x2="320" y2="475" stroke-width="2.5"/>
+        <path d="M 1380 780 L 1360 640 L 1370 540 L 1355 555 L 1360 490 L 1345 510 L 1352 450 L 1340 480 L 1333 420 L 1325 455 L 1318 410 L 1316 490 L 1300 500 L 1310 540 L 1295 570 L 1305 605 L 1288 640 L 1318 800 Z"/>
+        <line x1="1355" y1="555" x2="1405" y2="490" stroke-width="3"/>
+        <line x1="1345" y1="510" x2="1395" y2="450" stroke-width="3"/>
+        <line x1="1325" y1="455" x2="1295" y2="405" stroke-width="3"/>
+        <line x1="1316" y1="490" x2="1260" y2="455" stroke-width="2.5"/>
+      </g>
+      <ellipse cx="300" cy="770" rx="280" ry="40" fill="#1a1a24" opacity="0.35"/>
+      <ellipse cx="900" cy="790" rx="400" ry="50" fill="#1a1a24" opacity="0.3"/>
+      <ellipse cx="1400" cy="780" rx="260" ry="35" fill="#1a1a24" opacity="0.35"/>
+      <ellipse cx="650" cy="810" rx="500" ry="60" fill="#1a1a24" opacity="0.4"/>
+      <rect y="580" width="1600" height="320" fill="url(#mm-haze)"/>
+      <rect width="1600" height="900" fill="url(#mm-vignette)"/>
+    </svg>
+    <div class="mainmenu-panel">
+      <div class="mm-stamp">Presented for your amusement</div>
+      <h1 class="title-main mm-title">One Night In&hellip;</h1>
+      <div class="mm-series-rule"></div>
+      <div class="mm-story-name">Ashgrove House</div>
+      <div class="mm-story-chapter">— Chapter I —</div>
+      <div class="mm-sub">An Investigation in One Night</div>
+      <div class="mm-list">
+        <button class="mm-btn" id="mm-continue">Continue Investigation</button>
+        <button class="mm-btn" id="mm-new">New Investigation</button>
+        <button class="mm-btn" id="mm-howtoplay">How to Play</button>
+        <button class="mm-btn" id="mm-guestlog">The Guest Log</button>
+        <button class="mm-btn" id="mm-achievements">Achievements</button>
+        <button class="mm-btn" id="mm-options">Options</button>
+        <button class="mm-btn" id="mm-credits">Credits</button>
+        <button class="mm-btn" id="mm-quit">Close the Door</button>
+      </div>
+      <button class="mm-delete" id="mm-delete-save">Delete saved investigation</button>
+      <div class="mm-stats-slot" id="mm-stats-slot"></div>
+      <div class="mm-upcoming">
+        <div class="mm-upcoming-rule"></div>
+        <div class="mm-upcoming-label">Further Chapters</div>
+        <div class="mm-upcoming-card">
+          <div class="mm-upcoming-chapter">— Chapter II —</div>
+          <div class="mm-upcoming-name">Coming Soon</div>
+          <div class="mm-upcoming-sub">The next investigation is being prepared.</div>
+        </div>
+      </div>
+      <div class="mm-version" id="mm-version"></div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-credits">
+    <div class="overlay-inner">
+      <h2>Credits</h2>
+      <div class="credits-body">
+        <p class="cred-role">An investigation by</p>
+        <p class="cred-name">— you —</p>
+        <p class="cred-role">Engine &amp; narration</p>
+        <p class="cred-name">Written with Claude</p>
+        <p class="cred-role">Silver Age inspirations</p>
+        <p class="cred-name">Vincent Price · William Castle · Robert Wise · Jack Clayton · Shirley Jackson</p>
+        <p class="cred-role">Canonical films</p>
+        <p class="cred-name">The Changeling (1980) · The Haunting (1963) · 13 Ghosts (1960) · The Innocents (1961)</p>
+        <p class="cred-role">Tertiary inspirations</p>
+        <p class="cred-name">House on Haunted Hill · Legend of Hell House · Amityville · Crimson Peak · Carnival of Souls · Phantom Carriage</p>
+        <p class="cred-role">Typography</p>
+        <p class="cred-name">Cinzel · Cormorant Garamond · IM Fell English (Google Fonts)</p>
+        <p class="cred-role">Built with</p>
+        <p class="cred-name">HTML · CSS · Vanilla JavaScript · WebAudio · Web Speech API · Love</p>
+        <p class="cred-epitaph"><em>The Society assumes no liability for events that occurred after the front door was locked.</em></p>
+      </div>
+      <button class="btn-close" data-close="overlay-credits">Close</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-frightbreak">
+    <div class="overlay-inner frightbreak-inner">
+      <div class="fb-ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+      <h2 class="fb-title">A FRIGHT BREAK</h2>
+      <p class="fb-body">
+        The management of Ashgrove House takes a moment, at this point in the proceedings, to remind you that you are <em>under no obligation</em> to continue.
+      </p>
+      <p class="fb-body">
+        If you find yourself <em>overcome</em> — should the tension prove too great, your pulse too quick, or your courage, as sometimes happens, in want of a moment's repair — you are invited to step away from the screen for <em>sixty seconds</em>.
+      </p>
+      <div class="fb-countdown" id="fb-countdown">60</div>
+      <p class="fb-body fb-small">
+        The house will wait. It has, by all accounts, waited longer.
+      </p>
+      <div class="fb-actions">
+        <button id="fb-continue-now">I am not afraid. Continue now.</button>
+        <button id="fb-wait" class="fb-wait-btn">I will wait the full minute.</button>
+      </div>
+      <div class="fb-ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-howtoplay">
+    <div class="overlay-inner howtoplay-inner">
+      <h2>How to Play</h2>
+
+      <div class="htp-section">
+        <div class="htp-section-head">What this game is</div>
+        <p>You play a paranormal investigator hired by an unnamed <strong>executor</strong> to spend one night locked inside <strong>Ashgrove House</strong>, a Gothic mansion abandoned since 1974. The executor will pay <strong>$25,000</strong> for your verdict at sunrise. Your job is to determine, using real-world ghost-hunting tools, whether the house is actually haunted.</p>
+        <p>Every new game randomly picks one of three truths. You are not told which. You have until dawn (5:30 AM) to figure it out.</p>
+      </div>
+
+      <div class="htp-section">
+        <div class="htp-section-head">The three possible answers</div>
+        <div class="htp-verdict-grid">
+          <div class="htp-verdict">
+            <div class="htp-v-name htp-v-haunted">HAUNTED</div>
+            <p>The full legend is real. Twelve entities live in the house, each detectable by specific instruments. The tools don't lie.</p>
+          </div>
+          <div class="htp-verdict">
+            <div class="htp-v-name htp-v-partial">PARTIALLY HAUNTED</div>
+            <p>One real ghost. Everything else is coincidence, wiring, and suggestion. Separating signal from noise is the puzzle.</p>
+          </div>
+          <div class="htp-verdict">
+            <div class="htp-v-name htp-v-debunked">DEBUNKED</div>
+            <p>Nothing. All "phenomena" are drafts, pipes, old wiring, and your own pareidolia. Prove it with thermal readings and environmental explanations.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="htp-section">
+        <div class="htp-section-head">The four things you do</div>
+        <ol class="htp-steps">
+          <li><strong>Listen to Calder.</strong> The groundskeeper tells you the family's history when you arrive. Some of what he says is wrong — he's repeating what he was told. Documents in the library, study, and kitchen contradict him. Catching him in his inconsistencies pays a bonus at the verdict.</li>
+          <li><strong>Use your instruments.</strong> After Calder leaves at sundown, nine tools appear at the bottom of the screen. Hover any one to see what it does. Click to use. Visit every room. Evidence logs automatically to the journal (<kbd>J</kbd>).</li>
+          <li><strong>Sit still. Speak aloud.</strong> Every room has <em>Rest</em>, <em>Sit in Silence</em>, and <em>Call Out</em> actions. Use them. Not every kind of evidence comes through an instrument — sometimes the house only answers when you stop looking at it.</li>
+          <li><strong>Deliver your verdict.</strong> At sunrise, click the desk in the entry hall. Pick Haunted, Partially Haunted, or Debunked. You will not be told if you were right until after you commit.</li>
+        </ol>
+      </div>
+
+      <div class="htp-section">
+        <div class="htp-section-head">The nine instruments</div>
+        <div class="htp-tools">
+          <div class="htp-tool"><strong>K-II EMF Meter</strong><span>Five LEDs. Lights up near ghosts — also old wiring. Cross-check with thermal.</span></div>
+          <div class="htp-tool"><strong>Spirit Box</strong><span>Scans radio frequencies. Words pop out of the static. Log the ones you think are meaningful — others are noise.</span></div>
+          <div class="htp-tool"><strong>Ovilus</strong><span>Passive. Speaks a word on its own when an entity is near. Creepier than the spirit box because you didn't ask.</span></div>
+          <div class="htp-tool"><strong>SLS Camera</strong><span>Draws a skeletal stick-figure over anything it reads as human-shaped. Some furniture false-positives.</span></div>
+          <div class="htp-tool"><strong>EVP Recorder</strong><span>Place in a room, leave for 5 in-game minutes, review the waveform. The <em>only</em> tool that catches certain entities.</span></div>
+          <div class="htp-tool"><strong>Thermal Camera</strong><span>Cold spots = ghost activity. Hot sources = mundane (pipes, wiring). Log debunks — on a debunked run they pay the most.</span></div>
+          <div class="htp-tool"><strong>EM Pump</strong><span>Place in a room. Baits entities there and unlocks their detection on tools that would normally miss them. Raises aggression.</span></div>
+          <div class="htp-tool"><strong>REM Pod</strong><span>Proximity alarm. Place and leave. Sounds from any other room when something crosses its field.</span></div>
+          <div class="htp-tool"><strong>Film Camera</strong><span>Take photographs of any room. Review them in the Gallery — sometimes an anomaly appears that was not there when the shutter clicked. Classify each as real or mundane.</span></div>
+        </div>
+      </div>
+
+      <div class="htp-section">
+        <div class="htp-section-head">Danger: the aggression meter</div>
+        <p>Every time you provoke the house — knocking on walls, using the EM pump, getting a threat from the spirit box — a hidden meter rises. The current tier is shown at the top of the screen:</p>
+        <div class="htp-tiers">
+          <span class="htp-tier htp-t1">QUIET</span>
+          <span class="htp-tier htp-t2">WATCHING</span>
+          <span class="htp-tier htp-t3">CLOSE</span>
+          <span class="htp-tier htp-t4">IN THE ROOM</span>
+        </div>
+        <p>At <strong>Watching</strong>, small atmospheric scares fire. At <strong>Close</strong>, you may be forced into a "dodge-or-die" prompt where the wrong choice kills you. At <strong>In the Room</strong> on a haunted run, your next action can end the investigation permanently. <strong>Rest</strong> lowers the meter. <strong>Sit in Silence</strong> raises it slightly but may reward you with unique evidence.</p>
+      </div>
+
+      <div class="htp-section">
+        <div class="htp-section-head">The story you're uncovering</div>
+        <p>Ashgrove House was built in 1887 by <strong>Elias Ashgrove</strong> over the foundation of the 1851 Meeting-House, which burned with nineteen souls inside. His wife <strong>Margaret</strong> held séances. His daughter-in-law <strong>Evelyn</strong> died in the nursery in 1923. The twins <strong>Henry and Clara</strong> disappeared in 1935. <strong>Adeline</strong>, the last occupant, recorded tapes in the study until 1974.</p>
+        <p>At exactly <strong>12:00 AM</strong> in every game, something slides under the front door. Read it. It tells you what the whole night is actually about.</p>
+      </div>
+
+      <div class="htp-section">
+        <div class="htp-section-head">How to earn the most money</div>
+        <ul class="htp-payouts">
+          <li>Correct verdict → the base $25,000 fee</li>
+          <li>Catch Calder in his lies → +$500 per contradiction, up to 5</li>
+          <li>Use 4+ tools → +$1,500 coverage bonus; 6+ → +$3,000</li>
+          <li>Name the right entity on the verdict screen → up to +$9,000 (if you found the supporting documents)</li>
+          <li>Evidence from each tool category scales independently — diversify</li>
+        </ul>
+      </div>
+
+      <div class="htp-section">
+        <div class="htp-section-head">Optional: let the house answer you with a live voice</div>
+        <p>The game works fully without this. But if you provide a free <strong>Google Gemini API key</strong> (or Groq, OpenAI, or Anthropic), two things change:</p>
+        <ul>
+          <li>The <strong>Ovilus</strong> will speak words generated live by an AI playing the voice of the dead, instead of pulling from a fixed list.</li>
+          <li>A <strong>"Speak to the house"</strong> action appears in the Entry Hall and Wine Cellar. You can ask anything, in plain English; the house replies in the Gothic voice of its inhabitants. Limited to 3 per night.</li>
+        </ul>
+        <p><strong>Getting a free Gemini key (~60 seconds):</strong></p>
+        <ol>
+          <li>Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.</li>
+          <li>Sign in with any Google account. No credit card required.</li>
+          <li>Click <strong>Create API Key</strong>, copy the key.</li>
+          <li>In the game, open <kbd>⚙</kbd> Settings, scroll to <em>Speak with the House</em>, paste your key, enable, and <strong>Test connection</strong>.</li>
+        </ol>
+        <p style="color:#8a7565"><em>Your key is stored only on this device, in your browser. It's sent directly to the provider you pick.</em></p>
+      </div>
+
+      <div class="htp-section">
+        <div class="htp-section-head">Keyboard &amp; HUD shortcuts</div>
+        <div class="htp-keys">
+          <div><kbd>J</kbd> Evidence journal (with Dramatis Personae tab)</div>
+          <div><kbd>M</kbd> Map of the house</div>
+          <div><kbd>?</kbd> In-game help</div>
+          <div><kbd>Esc</kbd> Pause</div>
+          <div><kbd>🔊</kbd> Toggle read-aloud (Price narrator)</div>
+          <div><kbd>⚙</kbd> Settings</div>
+        </div>
+      </div>
+
+      <button class="btn-close" data-close="overlay-howtoplay">Close</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-guestlog">
+    <div class="overlay-inner guestlog-inner">
+      <h2>The Ashgrove Guest Log</h2>
+      <p class="gl-intro">Kept since 1974 by Mr. Calder's father. Each investigator engaged by the trust is asked to write a line, upon concluding the night, in their own hand. Some entries, the reader will note, are incomplete.</p>
+      <div class="guestlog-entries">
+        <div class="gl-entry"><div class="gl-head"><span class="gl-date">17 Oct 1974</span><span class="gl-name">Dr. H. Prideaux (Society for Psychical Research)</span></div><p>Spent the night. No activity worth reporting. Recommend the trust dissolve and the house be demolished. — H.P.</p></div>
+        <div class="gl-entry"><div class="gl-head"><span class="gl-date">2 Nov 1975</span><span class="gl-name">Miss A. Vance</span></div><p>The knocks in the library are not of the plumbing. Miss Halliwell is quite real. I will not return.</p></div>
+        <div class="gl-entry"><div class="gl-head"><span class="gl-date">31 Oct 1978</span><span class="gl-name">T. Lovegrove &amp; J. Finch (jointly)</span></div><p>Entered 9pm. Lovegrove remained. Finch departed at approximately 2am citing urgent personal matter. Lovegrove's entry not</p></div>
+        <div class="gl-entry gl-incomplete"><div class="gl-head"><span class="gl-date">14 Feb 1982</span><span class="gl-name">R. Callahan</span></div><p>The children in the governess's room are not</p></div>
+        <div class="gl-entry"><div class="gl-head"><span class="gl-date">6 Sep 1987</span><span class="gl-name">Sister M. Benedict</span></div><p>I prayed in every room. It was not sufficient. Tell the executor the prayers were attempted.</p></div>
+        <div class="gl-entry gl-incomplete"><div class="gl-head"><span class="gl-date">29 Oct 1994</span><span class="gl-name">P. Aldridge (paranormal investigator, independent)</span></div><p>Recorded extensively on tape. The tape is enclosed. I am not enclosed. I went into the cellar and the cellar, I now understand, is—</p></div>
+        <div class="gl-entry"><div class="gl-head"><span class="gl-date">20 Jun 2003</span><span class="gl-name">G. Wen (PhD candidate, Stanford)</span></div><p>Debunked. Every phenomenon traceable to drafts, plumbing, or pareidolia. Charged a flat fee. The executor paid without comment, which I found more unsettling than the house.</p></div>
+        <div class="gl-entry"><div class="gl-head"><span class="gl-date">13 Apr 2011</span><span class="gl-name">F. Calder (groundskeeper, NOT an investigator)</span></div><p>I am not writing because I investigated. I am writing because my father did, thirty years ago, and his entry is not finished, and I cannot, in good conscience, let the book close unacknowledged. — Frank.</p></div>
+        <div class="gl-entry gl-incomplete"><div class="gl-head"><span class="gl-date">this evening</span><span class="gl-name">(your entry is blank)</span></div><p><em>You have not yet written your line.</em></p></div>
+      </div>
+      <button class="btn-close" data-close="overlay-guestlog">Close the log</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-achievements">
+    <div class="overlay-inner">
+      <h2>Achievements</h2>
+      <p class="ach-intro">A private record, kept between you and the house.</p>
+      <div id="achievements-list"></div>
+      <button class="btn-close" data-close="overlay-achievements">Close</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-pause">
+    <div class="overlay-inner">
+      <h2>— Paused —</h2>
+      <p style="text-align:center;font-style:italic">The house waits, with you.</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:20px">
+        <button id="pause-resume">Resume</button>
+        <button id="pause-save">Save</button>
+        <button id="pause-settings">Settings</button>
+        <button id="pause-mainmenu">Return to main menu</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-title">
+    <svg class="title-backdrop" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <radialGradient id="tb-sky" cx="50%" cy="25%" r="80%">
+          <stop offset="0%" stop-color="#2a1828"/>
+          <stop offset="25%" stop-color="#180c1c"/>
+          <stop offset="55%" stop-color="#0c0612"/>
+          <stop offset="100%" stop-color="#020104"/>
+        </radialGradient>
+        <radialGradient id="tb-moon" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#f8e8c8" stop-opacity="0.95"/>
+          <stop offset="20%" stop-color="#f0d8a8" stop-opacity="0.7"/>
+          <stop offset="55%" stop-color="#d0a080" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#080410" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="tb-moon-surface" cx="40%" cy="38%" r="55%">
+          <stop offset="0%" stop-color="#fff4d8"/>
+          <stop offset="60%" stop-color="#f4e4c0"/>
+          <stop offset="100%" stop-color="#c8a878"/>
+        </radialGradient>
+        <linearGradient id="tb-house" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0c0604"/>
+          <stop offset="100%" stop-color="#1a0e06"/>
+        </linearGradient>
+        <radialGradient id="tb-window" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ffc870" stop-opacity="0.85"/>
+          <stop offset="100%" stop-color="#3a1808" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="tb-haze" cx="50%" cy="80%" r="60%">
+          <stop offset="0%" stop-color="#1a1222" stop-opacity="0.5"/>
+          <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1600" height="900" fill="url(#tb-sky)"/>
+      <!-- Moon halo -->
+      <circle cx="1200" cy="200" r="220" fill="url(#tb-moon)"/>
+      <!-- Moon disc with surface gradient -->
+      <circle cx="1200" cy="200" r="95" fill="url(#tb-moon-surface)"/>
+      <!-- Moon craters / seas -->
+      <g fill="#a88858" opacity="0.42">
+        <ellipse cx="1178" cy="180" rx="14" ry="10"/>
+        <ellipse cx="1222" cy="170" rx="8" ry="6"/>
+        <ellipse cx="1180" cy="220" rx="18" ry="8"/>
+        <ellipse cx="1230" cy="225" rx="10" ry="7"/>
+        <ellipse cx="1205" cy="240" rx="6" ry="4"/>
+        <ellipse cx="1162" cy="203" rx="5" ry="4"/>
+        <ellipse cx="1242" cy="195" rx="4" ry="3"/>
+      </g>
+      <!-- Soft shadow on one side of moon for dimensionality -->
+      <path d="M 1260 170 Q 1295 200 1260 230 Q 1220 220 1220 200 Q 1220 180 1260 170 Z" fill="#8a6838" opacity="0.25"/>
+      <!-- Varied starfield — different sizes and brightnesses, irregular spacing -->
+      <g fill="#fff4d8">
+        <circle cx="80" cy="50" r="0.8" opacity="0.5"/><circle cx="145" cy="95" r="1.4" opacity="0.85"/>
+        <circle cx="210" cy="140" r="0.6" opacity="0.4"/><circle cx="285" cy="72" r="1" opacity="0.7"/>
+        <circle cx="348" cy="210" r="0.8" opacity="0.55"/><circle cx="418" cy="45" r="1.6" opacity="0.9"/>
+        <circle cx="488" cy="165" r="0.5" opacity="0.4"/><circle cx="556" cy="88" r="1.2" opacity="0.8"/>
+        <circle cx="622" cy="32" r="0.7" opacity="0.55"/><circle cx="686" cy="202" r="1" opacity="0.75"/>
+        <circle cx="752" cy="118" r="0.4" opacity="0.35"/><circle cx="814" cy="65" r="1.5" opacity="0.88"/>
+        <circle cx="878" cy="148" r="0.8" opacity="0.6"/><circle cx="942" cy="48" r="0.6" opacity="0.5"/>
+        <circle cx="1008" cy="98" r="1.1" opacity="0.75"/><circle cx="1070" cy="188" r="0.7" opacity="0.5"/>
+        <circle cx="1340" cy="50" r="1.4" opacity="0.85"/><circle cx="1405" cy="135" r="0.8" opacity="0.6"/>
+        <circle cx="1460" cy="68" r="0.5" opacity="0.45"/><circle cx="1528" cy="200" r="1" opacity="0.7"/>
+        <circle cx="1572" cy="118" r="0.6" opacity="0.5"/><circle cx="35" cy="180" r="1.1" opacity="0.75"/>
+        <circle cx="240" cy="295" r="0.7" opacity="0.55"/><circle cx="470" cy="310" r="0.5" opacity="0.4"/>
+        <circle cx="765" cy="290" r="0.9" opacity="0.6"/><circle cx="1090" cy="320" r="0.6" opacity="0.45"/>
+        <circle cx="1390" cy="310" r="0.8" opacity="0.55"/>
+      </g>
+      <!-- Faint twinkling cross-glows on the brightest stars -->
+      <g fill="#fff4d8" opacity="0.45">
+        <path d="M 418 45 L 420 42 L 418 38 L 416 42 Z"/>
+        <path d="M 814 65 L 816 62 L 814 58 L 812 62 Z"/>
+        <path d="M 1340 50 L 1342 47 L 1340 43 L 1338 47 Z"/>
+        <path d="M 145 95 L 147 92 L 145 88 L 143 92 Z"/>
+      </g>
+      <!-- Wispy clouds drifting past the moon -->
+      <g opacity="0.3" fill="#2a2030">
+        <ellipse cx="1080" cy="220" rx="200" ry="18"/>
+        <ellipse cx="1340" cy="245" rx="170" ry="14"/>
+        <ellipse cx="1250" cy="160" rx="120" ry="10"/>
+      </g>
+      <g opacity="0.6">
+        <path d="M 0 430 Q 200 380 400 420 Q 600 360 800 410 Q 1000 370 1200 400 Q 1400 380 1600 410 L 1600 600 L 0 600 Z" fill="#04020a"/>
+      </g>
+      <!-- Ashgrove House: richer gothic facade -->
+      <g opacity="0.95">
+        <!-- Main body -->
+        <path d="M 560 510 L 560 720 L 740 720 L 740 510 Z" fill="url(#tb-house)"/>
+        <!-- Second-floor peaked gable -->
+        <path d="M 570 430 L 730 430 L 650 360 Z" fill="url(#tb-house)"/>
+        <path d="M 570 430 L 730 430 L 730 520 L 570 520 Z" fill="url(#tb-house)"/>
+        <!-- Main roof — steep pitch -->
+        <path d="M 540 510 L 760 510 L 880 610 L 420 610 Z" fill="#08050a"/>
+        <path d="M 540 510 L 760 510 L 780 530 L 520 530 Z" fill="#040207" opacity="0.7"/>
+        <!-- Side wing (left) — lower roof -->
+        <path d="M 420 610 L 420 720 L 560 720 L 560 610 Z" fill="url(#tb-house)"/>
+        <path d="M 420 610 L 560 610 L 560 720 L 600 720 L 600 640 L 420 640 Z" fill="#040207" opacity="0.5"/>
+        <!-- Side wing (right) -->
+        <path d="M 740 610 L 740 720 L 880 720 L 880 610 Z" fill="url(#tb-house)"/>
+        <!-- Foundation line -->
+        <path d="M 420 720 L 880 720 L 880 735 L 420 735 Z" fill="#020105"/>
+        <!-- Two chimneys -->
+        <path d="M 580 330 L 600 330 L 600 440 L 580 440 Z" fill="#08040a"/>
+        <path d="M 574 324 L 606 324 L 612 334 L 568 334 Z" fill="#08040a"/>
+        <path d="M 720 380 L 738 380 L 738 460 L 720 460 Z" fill="#0a0604"/>
+        <path d="M 715 374 L 743 374 L 748 384 L 710 384 Z" fill="#0a0604"/>
+        <!-- Faint smoke from one chimney -->
+        <path d="M 588 322 Q 600 300 588 278 Q 605 260 592 240" stroke="#2a2030" stroke-width="3" fill="none" opacity="0.25"/>
+        <!-- Gable window (attic) — dimly lit -->
+        <rect x="638" y="390" width="24" height="32" fill="url(#tb-window)" opacity="0.6"/>
+        <path d="M 638 390 L 650 380 L 662 390 Z" fill="#08040a"/>
+        <line x1="650" y1="390" x2="650" y2="422" stroke="#1a0a04" stroke-width="1"/>
+        <!-- Second-floor windows (4) -->
+        <g>
+          <rect x="588" y="445" width="22" height="44" fill="url(#tb-window)"/>
+          <line x1="599" y1="445" x2="599" y2="489" stroke="#1a0a04" stroke-width="1"/>
+          <line x1="588" y1="467" x2="610" y2="467" stroke="#1a0a04" stroke-width="1"/>
+          <rect x="628" y="445" width="22" height="44" fill="#140604" opacity="0.8"/>
+          <line x1="639" y1="445" x2="639" y2="489" stroke="#1a0a04" stroke-width="1"/>
+          <line x1="628" y1="467" x2="650" y2="467" stroke="#1a0a04" stroke-width="1"/>
+          <rect x="668" y="445" width="22" height="44" fill="url(#tb-window)" opacity="0.55"/>
+          <line x1="679" y1="445" x2="679" y2="489" stroke="#1a0a04" stroke-width="1"/>
+          <line x1="668" y1="467" x2="690" y2="467" stroke="#1a0a04" stroke-width="1"/>
+          <rect x="708" y="445" width="22" height="44" fill="#140604" opacity="0.8"/>
+          <line x1="719" y1="445" x2="719" y2="489" stroke="#1a0a04" stroke-width="1"/>
+          <line x1="708" y1="467" x2="730" y2="467" stroke="#1a0a04" stroke-width="1"/>
+        </g>
+        <!-- First-floor tall windows (flank door) -->
+        <g>
+          <rect x="580" y="540" width="26" height="72" fill="url(#tb-window)"/>
+          <line x1="593" y1="540" x2="593" y2="612" stroke="#1a0a04" stroke-width="1"/>
+          <line x1="580" y1="565" x2="606" y2="565" stroke="#1a0a04" stroke-width="1"/>
+          <line x1="580" y1="588" x2="606" y2="588" stroke="#1a0a04" stroke-width="1"/>
+          <rect x="694" y="540" width="26" height="72" fill="url(#tb-window)"/>
+          <line x1="707" y1="540" x2="707" y2="612" stroke="#1a0a04" stroke-width="1"/>
+          <line x1="694" y1="565" x2="720" y2="565" stroke="#1a0a04" stroke-width="1"/>
+          <line x1="694" y1="588" x2="720" y2="588" stroke="#1a0a04" stroke-width="1"/>
+        </g>
+        <!-- Side-wing windows (smaller) -->
+        <rect x="470" y="650" width="20" height="40" fill="url(#tb-window)" opacity="0.7"/>
+        <rect x="515" y="650" width="20" height="40" fill="#140604" opacity="0.7"/>
+        <rect x="770" y="650" width="20" height="40" fill="url(#tb-window)" opacity="0.5"/>
+        <rect x="815" y="650" width="20" height="40" fill="#140604" opacity="0.7"/>
+        <!-- Front door — tall, pointed arch -->
+        <path d="M 628 615 L 628 720 L 672 720 L 672 615 Q 672 605 650 600 Q 628 605 628 615 Z" fill="#1a0604"/>
+        <path d="M 632 620 L 632 718 L 668 718 L 668 620 Q 668 612 650 608 Q 632 612 632 620 Z" fill="#2a0e08"/>
+        <circle cx="664" cy="670" r="1.5" fill="#d4a878"/>
+        <!-- Porch light glow above door -->
+        <ellipse cx="650" cy="608" rx="38" ry="14" fill="url(#tb-window)" opacity="0.55"/>
+        <!-- Porch steps -->
+        <path d="M 610 720 L 690 720 L 695 730 L 605 730 Z" fill="#0a0604"/>
+        <path d="M 602 730 L 698 730 L 705 742 L 595 742 Z" fill="#060203"/>
+        <!-- Decorative trim line below roof -->
+        <line x1="540" y1="510" x2="760" y2="510" stroke="#2a1810" stroke-width="2" opacity="0.6"/>
+        <line x1="420" y1="610" x2="880" y2="610" stroke="#2a1810" stroke-width="1.5" opacity="0.5"/>
+      </g>
+      <!-- Wrought-iron fence along the front -->
+      <g stroke="#020105" stroke-width="1.5" opacity="0.8">
+        <line x1="380" y1="780" x2="380" y2="820"/>
+        <line x1="410" y1="780" x2="410" y2="820"/>
+        <line x1="440" y1="780" x2="440" y2="820"/>
+        <line x1="470" y1="780" x2="470" y2="820"/>
+        <line x1="500" y1="780" x2="500" y2="820"/>
+        <line x1="530" y1="780" x2="530" y2="820"/>
+        <line x1="770" y1="780" x2="770" y2="820"/>
+        <line x1="800" y1="780" x2="800" y2="820"/>
+        <line x1="830" y1="780" x2="830" y2="820"/>
+        <line x1="860" y1="780" x2="860" y2="820"/>
+        <line x1="890" y1="780" x2="890" y2="820"/>
+        <line x1="920" y1="780" x2="920" y2="820"/>
+        <line x1="380" y1="790" x2="530" y2="790"/>
+        <line x1="770" y1="790" x2="920" y2="790"/>
+      </g>
+      <!-- Distant tree silhouette layer (behind house) -->
+      <g opacity="0.5">
+        <path d="M 0 620 Q 60 580 100 600 Q 160 560 200 590 Q 260 560 310 600 Q 380 570 430 600 L 430 720 L 0 720 Z" fill="#06040c"/>
+        <path d="M 920 600 Q 980 570 1040 595 Q 1110 555 1180 590 Q 1260 560 1340 595 Q 1430 565 1510 590 Q 1570 570 1600 590 L 1600 720 L 920 720 Z" fill="#06040c"/>
+      </g>
+      <!-- Dead trees foreground — twisted bare branches -->
+      <g opacity="0.85" fill="#030106" stroke="#030106" stroke-width="2">
+        <!-- Left tree — gnarled -->
+        <path d="M 180 780 L 205 640 L 198 550 L 215 560 L 210 500 L 225 520 L 220 470 L 232 490 L 238 440 L 246 470 L 255 430 L 255 500 L 270 510 L 260 540 L 275 570 L 265 600 L 280 630 L 250 800 Z"/>
+        <line x1="215" y1="560" x2="170" y2="500" stroke-width="3"/>
+        <line x1="170" y1="500" x2="155" y2="470"/>
+        <line x1="170" y1="500" x2="150" y2="520"/>
+        <line x1="225" y1="520" x2="180" y2="460" stroke-width="3"/>
+        <line x1="180" y1="460" x2="160" y2="430"/>
+        <line x1="238" y1="440" x2="210" y2="395" stroke-width="2"/>
+        <line x1="246" y1="470" x2="278" y2="420" stroke-width="3"/>
+        <line x1="278" y1="420" x2="295" y2="395"/>
+        <line x1="270" y1="510" x2="320" y2="475" stroke-width="2.5"/>
+        <line x1="320" y1="475" x2="345" y2="455"/>
+        <!-- Right tree -->
+        <path d="M 1380 780 L 1360 640 L 1370 540 L 1355 555 L 1360 490 L 1345 510 L 1352 450 L 1340 480 L 1333 420 L 1325 455 L 1318 410 L 1316 490 L 1300 500 L 1310 540 L 1295 570 L 1305 605 L 1288 640 L 1318 800 Z"/>
+        <line x1="1355" y1="555" x2="1405" y2="490" stroke-width="3"/>
+        <line x1="1405" y1="490" x2="1425" y2="460"/>
+        <line x1="1345" y1="510" x2="1395" y2="450" stroke-width="3"/>
+        <line x1="1395" y1="450" x2="1420" y2="420"/>
+        <line x1="1333" y1="420" x2="1355" y2="385" stroke-width="2"/>
+        <line x1="1325" y1="455" x2="1295" y2="405" stroke-width="3"/>
+        <line x1="1295" y1="405" x2="1278" y2="380"/>
+        <line x1="1316" y1="490" x2="1260" y2="455" stroke-width="2.5"/>
+      </g>
+      <!-- A single small tree far on the lawn -->
+      <g opacity="0.6" fill="#04020a">
+        <path d="M 360 730 L 370 680 L 365 655 L 375 660 L 378 640 L 385 655 L 380 700 L 390 730 Z"/>
+      </g>
+      <!-- Ground fog layers -->
+      <ellipse cx="300" cy="770" rx="280" ry="40" fill="#1a1a24" opacity="0.35"/>
+      <ellipse cx="900" cy="790" rx="400" ry="50" fill="#1a1a24" opacity="0.3"/>
+      <ellipse cx="1400" cy="780" rx="260" ry="35" fill="#1a1a24" opacity="0.35"/>
+      <ellipse cx="650" cy="810" rx="500" ry="60" fill="#1a1a24" opacity="0.4"/>
+      <rect y="580" width="1600" height="320" fill="url(#tb-haze)"/>
+      <rect width="1600" height="900" fill="url(#tb-vignette)"/>
+      <defs><radialGradient id="tb-vignette" cx="50%" cy="50%" r="60%"><stop offset="50%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity="0.7"/></radialGradient></defs>
+    </svg>
+    <div class="overlay-inner title-panel">
+      <div class="title-stamp">Presented for your amusement</div>
+      <h1 class="title-main">One Night In&hellip;</h1>
+      <div class="mm-series-rule"></div>
+      <div class="mm-story-name">Ashgrove House</div>
+      <div class="mm-story-chapter">— Chapter I —</div>
+      <p class="title-sub">An Investigation in One Night</p>
+      <div class="title-byline">— after the manner of Mr. V. Price &amp; Mr. W. Castle —</div>
+      <div class="title-warning">
+        <div class="warn-ornament">❦ &nbsp; ❦ &nbsp; ❦</div>
+        <p class="warn-headline">A WARNING TO THE NERVOUS</p>
+        <p class="warn-body">
+          The management of Ashgrove House wishes to inform the prospective investigator
+          that the events portrayed in this entertainment are <em>inspired by true accounts</em>
+          kept by the Ashgrove Preservation Society, and that the phenomena described herein
+          have been reported by <em>persons of good standing</em> who spent the night within
+          these walls.
+        </p>
+        <p class="warn-body">
+          Those of a <em>delicate constitution</em>, or who are <em>easily alarmed by sudden noises,
+          unexplained sensations, or the sight of things in the corner of the eye</em>,
+          are advised to reconsider.
+        </p>
+        <p class="warn-body warn-final">
+          <em>The Society assumes no liability for events that occur after the front door is locked.</em>
+        </p>
+        <div class="warn-ornament">❦ &nbsp; ❦ &nbsp; ❦</div>
+      </div>
+      <button id="btn-start">I accept the terms. Begin.</button>
+      <label class="warn-skip">
+        <input type="checkbox" id="chk-skip-warning">
+        <span>I have read the warning. Skip it next time.</span>
+      </label>
+      <p class="title-note">The house is one of three things tonight: haunted, partially haunted, or perfectly ordinary. The dice fall now. You will not be told which.</p>
+    </div>
+  </div>
+</div>
+
+<script src="data.js?v=0.5.0"></script>
+<script src="audio.js?v=0.5.0"></script>
+<script src="art.js?v=0.5.0"></script>
+<script src="tts.js?v=0.5.0"></script>
+<script src="game.js?v=0.5.0"></script>
+<script src="danger.js?v=0.5.0"></script>
+<script src="weather.js?v=0.5.0"></script>
+<script src="stats.js?v=0.5.0"></script>
+<script src="achievements.js?v=0.5.0"></script>
+<script src="ai.js?v=0.5.0"></script>
+<script src="scares.js?v=0.5.0"></script>
+<script src="stories.js?v=0.5.0"></script>
+<script src="minigames.js?v=0.5.0"></script>
+<!-- Additional stories register themselves here, after stories.js.
+     Example: <script src="stories/waverly.js"></script> -->
+<script src="settings.js?v=0.5.0"></script>
+<script src="tooltips.js?v=0.5.0"></script>
+<script src="menu.js?v=0.5.0"></script>
+<script>
+  (function boot() {
+    try {
+      loadSettings();
+      initSettings();
+      initTooltips();
+      initHelp();
+      initMenus();
+      // Safety: always open on the main menu, hide any stray overlays.
+      document.querySelectorAll(".overlay").forEach(o => {
+        if (o.id !== "overlay-mainmenu") o.classList.add("hidden");
+      });
+      const mm = document.getElementById("overlay-mainmenu");
+      if (mm) mm.classList.remove("hidden");
+    } catch (e) {
+      console.error("Boot failure:", e);
+      // Last-resort recovery: wipe storage and reload
+      if (confirm("The investigation failed to load (" + e.message + ").\n\nReset saved data and reload?")) {
+        try { localStorage.clear(); } catch (err) {}
+        location.reload();
+      }
+    }
+  })();
+</script>
+</body>
+</html>
