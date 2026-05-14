@@ -84,9 +84,12 @@ const tts = (function() {
     // Skip exact duplicate only if still pending/speaking the same line
     if (clean === lastText && synth.speaking) return;
     lastText = clean;
-    // Default behavior: QUEUE behind anything still speaking.
-    // Pass { preempt: true } to interrupt (used for jump scares, overlay close).
-    if (opts && opts.preempt) synth.cancel();
+    // New behavior (May 2026): narration ALWAYS preempts by default so
+    // clicking a new room / document / overlay cuts off whatever was being
+    // read.  Callers can opt out with { preempt: false } for cases (like
+    // the spirit box) where stacking voices is the desired effect.
+    const shouldPreempt = !(opts && opts.preempt === false);
+    if (shouldPreempt) synth.cancel();
     const u = new SpeechSynthesisUtterance(clean);
     if (chosenVoice) u.voice = chosenVoice;
     // Female voice gets Barbara-Steele bias: slower + lower by default.
@@ -124,7 +127,7 @@ const tts = (function() {
     } else if (mode === "ovilus" && avail.length) {
       // Ovilus: low flat monotone. Prefer the deepest male voice available.
       const n = a => a.name.toLowerCase();
-      const maleLike = avail.filter(v => /male|david|mark|fred|alex|george|daniel|james|guy|paul/.test(n(v)));
+      const maleLike = avail.filter(v => /male|david|mark|fred|alex|george|daniel|james|paul/.test(n(v)));
       const p = maleLike.length ? maleLike : avail;
       u.voice = p[0];
       u.pitch = 0.5;   // very low
@@ -151,4 +154,17 @@ const tts = (function() {
   }
 
   return { speak, speakDevice, stop, pickVoice, refreshVoices, enabled, availableGenders, currentVoiceLabel };
+})();
+
+// Stop any in-flight narration when the page is unloaded/refreshed, when
+// the tab is hidden, or when navigating away.  speechSynthesis otherwise
+// keeps speaking after the page is gone.
+(function wireTtsLifecycle() {
+  if (!window.speechSynthesis) return;
+  const kill = () => { try { window.speechSynthesis.cancel(); } catch (e) {} };
+  window.addEventListener("beforeunload", kill);
+  window.addEventListener("pagehide", kill);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") kill();
+  });
 })();

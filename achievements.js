@@ -43,7 +43,6 @@ const ACHIEVEMENTS = {
   eliza_pact_no:     { name: "No",                   description: "Refuse Eliza at 4:00 AM." },
   skip_calder:       { name: "Didn't Catch the Name", description: "Dismiss Calder without hearing his full walkthrough.", hidden: true },
   bell_rung:         { name: "She Was Listening",    description: "Ring Margaret's silver bell at the séance table." },
-  spoke_to_house:    { name: "She Answered",          description: "Speak to the house, and be answered.", hidden: true },
 };
 
 // Load persisted unlocks

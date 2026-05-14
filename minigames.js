@@ -66,7 +66,7 @@ function ouijaMarkup() {
   ).join("");
   return `
     <h2>At Margaret's Table</h2>
-    <p class="scare-prompt-subtext">Your fingertips rest on the planchette. It begins to move on its own. When it <em>pauses</em> over a letter, that letter will lock itself into the word.</p>
+    <p class="scare-prompt-subtext"><strong>How to play:</strong> rest. Do not move the planchette — it drifts on its own. When it <em>pauses</em> on a letter, that letter locks into the word below. The full word will reveal itself in a minute or two. Click END SESSION at any time to lift your hands.</p>
     <div class="ouija-board" id="ouija-board">
       <div class="ouija-sun">☀</div>
       <div class="ouija-moon">☾</div>
@@ -93,96 +93,7 @@ function ouijaMarkup() {
   `;
 }
 
-// --- Speak to the house ---
-// Limited to 3 uses per run. Each use costs 15 in-game minutes and raises
-// aggression. Requires AI to be enabled. Without AI, the player gets a
-// fallback cryptic line from a small pool.
-
-const SPEAK_HOUSE_FALLBACK = [
-  "You speak. The house does not answer. Not tonight. Not like this.",
-  "Silence. The air in the room goes still, as though it listened, and chose not to reply.",
-  "A board creaks, somewhere. Perhaps a reply. Perhaps a board.",
-  "The walls keep their counsel. You will have to earn it.",
-];
-
-function openSpeakToHouse() {
-  if (!state.calderLeft) { narrate("You are not alone enough to do this yet."); return; }
-  const remaining = 3 - (state._speakHouseUses || 0);
-  if (remaining <= 0) {
-    narrate("<em>You have already spoken to the house three times tonight. It will not hear you again before dawn.</em>");
-    return;
-  }
-  const aiOn = typeof aiIsEnabled === "function" && aiIsEnabled();
-  const body = document.getElementById("scare-body");
-  body.innerHTML = `
-    <h2>Speak to the House</h2>
-    <p class="scare-prompt-subtext">
-      You address the walls, or whatever is behind them, aloud.
-      ${remaining} utterance${remaining === 1 ? "" : "s"} left before dawn.
-    </p>
-    ${aiOn ? "" : `<p style="font-size:12px;color:#a08060;font-style:italic;text-align:center;">
-      (To hear the house reply with a live voice, enable AI in <strong>Settings → Speak with the House</strong> and provide a free API key.)
-    </p>`}
-    <input type="text" id="speak-house-input" maxlength="220"
-      placeholder="Ask your question, or address them by name."
-      style="width:100%;padding:10px;background:#0a0604;border:1px solid #3a2818;color:#e8d0a8;font-family:'Cormorant Garamond',serif;font-size:15px;font-style:italic">
-    <div id="speak-house-reply" class="speak-reply"></div>
-    <div class="scare-choices">
-      <button id="speak-house-submit">Speak</button>
-      <button id="speak-house-close">Close your mouth</button>
-    </div>
-  `;
-  openOverlay("overlay-scare");
-  const input = document.getElementById("speak-house-input");
-  if (input) input.focus();
-
-  async function submit() {
-    const text = (input.value || "").trim();
-    if (!text) return;
-    input.disabled = true;
-    const btn = document.getElementById("speak-house-submit");
-    if (btn) btn.disabled = true;
-    const replyEl = document.getElementById("speak-house-reply");
-    replyEl.innerHTML = `<em style="color:#60a070">...</em>`;
-    state._speakHouseUses = (state._speakHouseUses || 0) + 1;
-    advanceTime(15);
-    bumpAggression(2, "you addressed the house directly");
-
-    let reply = null;
-    if (aiOn && typeof aiHouseResponse === "function") {
-      const tier = typeof getTier === "function" ? getTier() : "QUIET";
-      const ctx = {
-        roomName: ROOMS[state.currentRoom]?.name || state.currentRoom,
-        docsRead: (state.docsRead && state.docsRead.size) || 0,
-        evidenceCount: (state.evidence || []).length,
-        tier,
-        when: typeof formatTime === "function" ? formatTime() : ""
-      };
-      reply = await aiHouseResponse(text, ctx);
-    }
-    if (!reply) {
-      reply = SPEAK_HOUSE_FALLBACK[Math.floor(Math.random() * SPEAK_HOUSE_FALLBACK.length)];
-    }
-    // Log evidence
-    logEvidence("Speak to the House", `You asked: "${text.slice(0, 80)}" — the house answered.`);
-    replyEl.innerHTML = `<div class="speak-reply-line">${escapeHtml(reply)}</div>`;
-    // Narrate + TTS
-    try { audio.sfx("whisper"); } catch (e) {}
-    if (typeof tts !== "undefined" && tts.speak) {
-      setTimeout(() => tts.speak(reply, { preempt: false }), 300);
-    }
-    // First-time achievement unlock for reaching this feature
-    if (typeof unlockAchievement === "function") unlockAchievement("spoke_to_house");
-  }
-
-  document.getElementById("speak-house-submit").onclick = submit;
-  document.getElementById("speak-house-close").onclick = () => closeOverlay("overlay-scare");
-  input.addEventListener("keydown", e => { if (e.key === "Enter") submit(); });
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
+// --- Ouija driver ---
 
 // Ouija driver: planchette slides between cells, pauses on target letters,
 // auto-locks after a visible dwell. Player doesn't have to click-time.
@@ -196,7 +107,12 @@ function runOuija(word) {
   let curIdx = Math.floor(Math.random() * 26);    // start on a random letter
   moveTo(curIdx, true);
 
-  const pullStrength = state.truth === "haunted" ? 1.0 : state.truth === "partial" ? 0.55 : 0;
+  // Pull strength biases planchette toward the next needed letter.
+  // Even in debunked runs we still spell the (meaningless) word so the
+  // mini-game visibly works — the word itself just won't mean anything.
+  const pullStrength = state.truth === "haunted" ? 1.0
+                     : state.truth === "partial" ? 0.7
+                     : 0.45;
   let ended = false;
 
   function moveTo(i, instant) {
@@ -225,13 +141,13 @@ function runOuija(word) {
   async function step() {
     if (ended) return;
 
-    // Pick next letter. If a target letter is needed AND pull is on,
-    // bias toward drifting near it; otherwise random neighbour-hops so
-    // the motion feels organic rather than random-teleporty.
+    // Pick next letter. Bias strongly toward the needed letter so the
+    // word visibly assembles; otherwise drift to a neighbour for organic
+    // motion.
     const needed = word[collected.length];
     const neededIdx = needed ? OUIJA_LAYOUT.findIndex(c => c.id === needed) : -1;
     let nextIdx;
-    if (neededIdx >= 0 && pullStrength > 0 && Math.random() < 0.35 + pullStrength * 0.25) {
+    if (neededIdx >= 0 && Math.random() < 0.55 + pullStrength * 0.35) {
       // Drift toward the target — pick a neighbour that reduces distance
       nextIdx = biasedNeighbour(curIdx, neededIdx);
     } else {
@@ -243,25 +159,25 @@ function runOuija(word) {
     moveTo(curIdx, false);
 
     // Wait for slide to complete
-    await sleep(900 + Math.random() * 400);
+    await sleep(650 + Math.random() * 300);
 
     // Are we on the needed letter? Pause and auto-lock.
-    if (OUIJA_LAYOUT[curIdx].id === needed && pullStrength > 0) {
+    if (OUIJA_LAYOUT[curIdx].id === needed) {
       pulse(curIdx);
       try { audio.sfx("wood_settle"); } catch (e) {}
-      await sleep(900);
+      await sleep(700);
       // Lock it in
       collected += needed;
       if (wordEl) wordEl.textContent = collected;
       try { audio.sfx("ovilus"); } catch (e) {}
-      await sleep(450);
+      await sleep(350);
       if (collected.length >= word.length) {
         endSeanceSession(collected, word);
         return;
       }
     } else {
       // Normal dwell
-      await sleep(350);
+      await sleep(250);
     }
 
     if (!ended) step();
@@ -609,4 +525,258 @@ function pickSeanceWord() {
   if (truth === "haunted") return hauntedWords[Math.floor(Math.random() * hauntedWords.length)];
   if (truth === "partial") return partialWords[Math.floor(Math.random() * partialWords.length)];
   return debunkedNoise[Math.floor(Math.random() * debunkedNoise.length)];
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
+// WYNDMERE — The Latin Typewriter (chapel lectern)
+// A 1920s Underwood that types itself. Carriage advances, type-bars
+// strike paper, letters appear one at a time. What it types depends on
+// the truth of the night: Latin / English fragments (haunted), partial
+// drift (partial), or stuck-key gibberish (debunked). Player watches.
+// ──────────────────────────────────────────────────────────────────────
+const LATIN_TYPEWRITER_PHRASES = {
+  haunted: [
+    { line: "DIMITTE NOBIS DEBITA NOSTRA",      sub: "forgive us our debts",            tag: "Latin" },
+    { line: "I DID NOT GO BELOW",                sub: "the child's hand",                tag: "Beatrice" },
+    { line: "AHERNE STAYED FOR ME",              sub: "in the chapel, at three",         tag: "Confession" },
+    { line: "MATER ORA PRO NOBIS",               sub: "mother, pray for us",             tag: "Latin" },
+    { line: "THE FATHER SIGNED THE PAPER",       sub: "the certificate, by his own hand",tag: "Accusation" }
+  ],
+  partial: [
+    { line: "DIMITTE NOBIS",                     sub: "forgive us",                      tag: "Latin (fragment)" },
+    { line: "FATHER A . . . . . .",              sub: "his name, half-typed",            tag: "Fragment" },
+    { line: "MOTHER . . . . . . . . . .",        sub: "the carriage refused to advance", tag: "Fragment" }
+  ],
+  debunked: [
+    { line: "QQQQQQQQQQQQQQQQQQ",                sub: "a stuck key",                     tag: "Mechanical" },
+    { line: "THE QUICK BROWN FOX",               sub: "a typist's test sentence",        tag: "Mundane" },
+    { line: "ZXJKPMQ WBVHN  ",                   sub: "ribbon drift; no language",       tag: "Mundane" }
+  ]
+};
+
+function openLatinTypewriter() {
+  if (!state.calderLeft) {
+    narrate("You cannot examine it closely with Mrs. Thrale near. You let it be.");
+    return;
+  }
+  if (state._latinCooldown && state.timeMinutes < state._latinCooldown) {
+    narrate("<em>The carriage is still warm. The ribbon needs a moment.</em>");
+    return;
+  }
+  advanceTime(4);
+  bumpAggression(1, "you waited at the typewriter");
+
+  const truth = state.truth || "debunked";
+  const pool = LATIN_TYPEWRITER_PHRASES[truth] || LATIN_TYPEWRITER_PHRASES.debunked;
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+
+  const body = document.getElementById("scare-body");
+  body.innerHTML = `
+    <h2>The Typewriter on the Lectern</h2>
+    <p class="scare-prompt-subtext"><strong>How to play:</strong> stand back. Do not touch the keys. The carriage will move by itself; the type-bars will strike. Whatever appears on the paper appears unbidden. Click LIFT THE PAPER when the line is done.</p>
+    <div class="latin-typewriter" id="latin-tw">
+      <svg viewBox="0 0 320 200" width="100%" height="auto" style="display:block;margin:0 auto;max-width:520px">
+        <defs>
+          <linearGradient id="tw-body" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#2a2018"/>
+            <stop offset="60%" stop-color="#16100a"/>
+            <stop offset="100%" stop-color="#080604"/>
+          </linearGradient>
+          <radialGradient id="tw-paper" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#f4e8c8"/>
+            <stop offset="100%" stop-color="#c8b890"/>
+          </radialGradient>
+        </defs>
+        <!-- chassis -->
+        <rect x="20" y="60" width="280" height="120" rx="10" fill="url(#tw-body)" stroke="#0a0604" stroke-width="2"/>
+        <rect x="40" y="80" width="240" height="40" rx="4" fill="#0a0604"/>
+        <!-- paper -->
+        <rect x="60" y="30" width="200" height="70" rx="2" fill="url(#tw-paper)" stroke="#3a2a18" stroke-width="1.5"/>
+        <text id="tw-text" x="160" y="68" text-anchor="middle" font-family="Courier New, monospace" font-size="11" fill="#1a0e06" letter-spacing="1.5"></text>
+        <!-- carriage -->
+        <rect id="tw-carriage" x="50" y="22" width="220" height="14" rx="2" fill="#1a120a" stroke="#3a2a18" stroke-width="1.2"/>
+        <!-- keys (3 rows) -->
+        <g fill="#080604" stroke="#2a1a10" stroke-width="0.8">
+          ${(() => { let k=""; const rows=[["Q","W","E","R","T","Y","U","I","O","P"],["A","S","D","F","G","H","J","K","L"],["Z","X","C","V","B","N","M"]]; rows.forEach((r,ri)=>{ r.forEach((c,ci)=>{ const x=46+ci*22+ri*8; const y=130+ri*16; k+=`<circle cx="${x}" cy="${y}" r="7" fill="#080604" stroke="#3a2a18"/><text x="${x}" y="${y+3}" text-anchor="middle" font-family="Courier New" font-size="8" fill="#c8a060">${c}</text>`; }); }); return k; })()}
+        </g>
+        <!-- type-basket -->
+        <path d="M 100 90 Q 160 50 220 90" fill="none" stroke="#3a2a18" stroke-width="1.2"/>
+      </svg>
+    </div>
+    <div class="seance-word" id="tw-readout" style="font-family:'Courier New',monospace;letter-spacing:2px;color:#c8a060;text-align:center;font-size:14px"></div>
+    <div class="scare-choices">
+      <button id="tw-end" disabled>— typing —</button>
+    </div>
+  `;
+  openOverlay("overlay-scare");
+  runLatinTypewriter(pick);
+}
+
+function runLatinTypewriter(pick) {
+  const textEl    = document.getElementById("tw-text");
+  const readoutEl = document.getElementById("tw-readout");
+  const carriage  = document.getElementById("tw-carriage");
+  const endBtn    = document.getElementById("tw-end");
+  if (!textEl || !readoutEl || !carriage) return;
+
+  let i = 0;
+  let done = false;
+  const target = pick.line;
+  const total  = target.length;
+
+  function tick() {
+    if (done) return;
+    if (i >= total) {
+      done = true;
+      try { audio.sfx("chime"); } catch (_) {}
+      readoutEl.innerHTML = `<span style="color:#c8a060">${target}</span><br><span style="font-size:11px;color:#8a7565;font-style:italic">${pick.sub}</span>`;
+      if (endBtn) { endBtn.disabled = false; endBtn.textContent = "Lift the paper from the platen"; }
+      return;
+    }
+    const ch = target[i++];
+    textEl.textContent = target.slice(0, i);
+    // shift carriage left as letters accumulate
+    if (carriage) carriage.setAttribute("x", String(50 - (i * 0.6)));
+    try { audio.sfx(ch === " " ? "wood_settle" : "ovilus"); } catch (_) {}
+    setTimeout(tick, ch === " " ? 220 : 340 + Math.random() * 180);
+  }
+  tick();
+
+  if (endBtn) endBtn.onclick = () => endLatinTypewriter(pick, done ? target : target.slice(0, i));
+}
+
+function endLatinTypewriter(pick, got) {
+  closeOverlay("overlay-scare");
+  state._latinCooldown = state.timeMinutes + 25;
+  if (!got || got.length < 3) {
+    narrate("<em>You pull the sheet free. The platen has bitten the paper unevenly. Whatever it was typing, it has not finished.</em>");
+    return;
+  }
+  const finished = got === pick.line;
+  if (finished && state.truth === "haunted") {
+    narrate(`<em>You take the sheet from the platen. The paper is still warm.</em> The line reads: <strong>"${pick.line}"</strong> <em>— ${pick.sub}.</em>`);
+    logEvidence("Latin Typewriter", `The chapel typewriter typed unbidden: "${pick.line}" (${pick.tag}).`);
+    if (typeof showMilestone === "function") {
+      showMilestone("THE TYPEWRITER ANSWERED", `<em>"${pick.line}"</em><br><span style="font-size:11px;font-style:italic">${pick.sub}</span>`);
+    }
+    if (typeof bumpAggression === "function") bumpAggression(2, "the chapel typed at you");
+    if (typeof unlockAchievement === "function") unlockAchievement("latin_typewriter");
+  } else if (finished && state.truth === "partial") {
+    narrate(`<em>You take the sheet. The line reads: <strong>"${pick.line}"</strong> — ${pick.sub}. You cannot say whether the room typed it or the building settled and tapped a single key, many times in succession.</em>`);
+    logEvidence("Latin Typewriter — Partial", `Fragment typed in chapel: "${pick.line}".`);
+  } else if (finished && state.truth === "debunked") {
+    narrate(`<em>You take the sheet. The line reads: <strong>"${pick.line}"</strong>. ${pick.sub}. A typewriter, you remind yourself, is a machine of springs and oil.</em>`);
+    logEvidence("Latin Typewriter — Debunked", `Mechanical type-out in chapel: "${pick.line}" (${pick.tag}).`);
+  } else {
+    narrate(`<em>You lift the sheet partway through. "${got}" — partial. The carriage rests.</em>`);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// WYNDMERE — The Stones on the Lakeshore
+// A row of water-smoothed black stones spells something the lake has
+// already written. Player reads them: drift varies with truth state.
+// ──────────────────────────────────────────────────────────────────────
+const SHORE_STONE_WORDS = {
+  haunted: ["BELOW", "MOTHER", "FORGIVE", "VIVIAN"],
+  partial: ["BEL_W", "FOR__VE", "MOT__R"],
+  debunked: ["RANDOM", "PEBBLE", "S TONES"]
+};
+
+function openShoreStones() {
+  if (!state.calderLeft) { narrate("You will not stoop to the stones with Mrs. Thrale watching from the path."); return; }
+  if (state._stonesCooldown && state.timeMinutes < state._stonesCooldown) {
+    narrate("<em>The lake has not yet rearranged itself. Wait.</em>");
+    return;
+  }
+  advanceTime(3);
+  bumpAggression(1, "you knelt at the waterline");
+
+  const truth = state.truth || "debunked";
+  const pool  = SHORE_STONE_WORDS[truth] || SHORE_STONE_WORDS.debunked;
+  const word  = pool[Math.floor(Math.random() * pool.length)];
+
+  const body = document.getElementById("scare-body");
+  body.innerHTML = `
+    <h2>The Row of Stones</h2>
+    <p class="scare-prompt-subtext"><strong>How to play:</strong> kneel. Look. The lake has already arranged them. You only have to read what is there. The waves will turn each stone in turn.</p>
+    <div id="stones-row" style="display:flex;justify-content:center;gap:8px;margin:24px 0;flex-wrap:wrap"></div>
+    <div class="seance-word" id="stones-readout" style="text-align:center;color:#a8c0d0;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;letter-spacing:3px"></div>
+    <div class="scare-choices">
+      <button id="stones-end" disabled>— the lake is turning the stones —</button>
+    </div>
+  `;
+  openOverlay("overlay-scare");
+  runShoreStones(word);
+}
+
+function runShoreStones(word) {
+  const row     = document.getElementById("stones-row");
+  const readout = document.getElementById("stones-readout");
+  const endBtn  = document.getElementById("stones-end");
+  if (!row) return;
+
+  // Build face-down stones (no letter shown yet).
+  row.innerHTML = "";
+  for (let i = 0; i < word.length; i++) {
+    const ch = word[i];
+    const stone = document.createElement("div");
+    stone.className = "shore-stone";
+    stone.dataset.i = i;
+    stone.dataset.ch = ch;
+    stone.style.cssText = "width:38px;height:46px;border-radius:50% 50% 48% 52% / 40% 40% 60% 60%;background:radial-gradient(ellipse at 35% 30%,#5a5048 0%,#2a201a 60%,#0a0604 100%);box-shadow:inset 0 -4px 8px rgba(0,0,0,0.6),0 2px 4px rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:18px;color:#0a0604;font-weight:600;transition:all 600ms";
+    stone.textContent = "";
+    row.appendChild(stone);
+  }
+
+  let i = 0;
+  let done = false;
+  function turn() {
+    if (done) return;
+    if (i >= word.length) {
+      done = true;
+      readout.textContent = word.replace(/_/g, "·");
+      try { audio.sfx("chime"); } catch (_) {}
+      if (endBtn) { endBtn.disabled = false; endBtn.textContent = "Stand. Step back from the water."; }
+      return;
+    }
+    const stone = row.querySelector(`[data-i="${i}"]`);
+    if (stone) {
+      const ch = stone.dataset.ch;
+      stone.style.background = "radial-gradient(ellipse at 35% 30%,#c8b894 0%,#7a6c54 60%,#3a2e1a 100%)";
+      stone.style.color = "#1a0e06";
+      stone.textContent = ch === "_" ? "·" : ch;
+      try { audio.sfx("wood_settle"); } catch (_) {}
+    }
+    i++;
+    setTimeout(turn, 700 + Math.random() * 400);
+  }
+  setTimeout(turn, 800);
+
+  if (endBtn) endBtn.onclick = () => endShoreStones(word, done);
+}
+
+function endShoreStones(word, finished) {
+  closeOverlay("overlay-scare");
+  state._stonesCooldown = state.timeMinutes + 25;
+  if (!finished) {
+    narrate("<em>You stand before the lake has finished its sentence. The row of stones is half-turned behind you as you walk away.</em>");
+    return;
+  }
+  const clean = word.replace(/_/g, "·");
+  if (state.truth === "haunted") {
+    narrate(`<em>The stones, in their row, spell: <strong>${clean}</strong>. The water breathes against them as you read.</em>`);
+    logEvidence("Lake Stones", `Row of stones at the shore spelled "${clean}".`);
+    if (typeof showMilestone === "function") {
+      showMilestone("THE LAKE HAS WRITTEN", `<em>${clean}</em>`);
+    }
+    if (typeof bumpAggression === "function") bumpAggression(1, "the lake answered with its own letters");
+  } else if (state.truth === "partial") {
+    narrate(`<em>The stones spell: <strong>${clean}</strong>. Letters missing — perhaps unfinished, perhaps eroded, perhaps a pattern your mind is providing.</em>`);
+    logEvidence("Lake Stones — Partial", `Stones read "${clean}" — some letters missing.`);
+  } else {
+    narrate(`<em>You read the row. It spells <strong>${clean}</strong>. Pebbles arranged by a wave; the alphabet is in your eye, not in the water.</em>`);
+    logEvidence("Lake Stones — Debunked", `Stones at the shore read "${clean}" — apophenia.`);
+  }
 }

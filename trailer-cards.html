@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>One Night In… — Trailer Card Reel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #d4a850;
+    --gold-bright: #f4d088;
+    --velvet: #0a0604;
+    --blood: #6a0e08;
+    --bone: #f0e4c8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: var(--velvet);
+    color: var(--bone);
+    font-family: 'IM Fell English', Georgia, serif;
+    cursor: none;
+  }
+  body.show-cursor { cursor: default; }
+
+  /* Film grain overlay (procedural noise via SVG) */
+  .grain {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.55'/></svg>");
+    opacity: 0.08;
+    mix-blend-mode: overlay;
+    z-index: 100;
+    animation: grainShift 0.7s steps(8) infinite;
+  }
+  @keyframes grainShift {
+    0%   { transform: translate(0, 0); }
+    25%  { transform: translate(-2%, 1%); }
+    50%  { transform: translate(1%, -2%); }
+    75%  { transform: translate(-1%, -1%); }
+    100% { transform: translate(0, 0); }
+  }
+
+  /* Vignette */
+  .vignette {
+    position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.7) 90%);
+    z-index: 90;
+  }
+
+  /* Each slide is absolutely positioned; .active makes it visible */
+  .slide {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    opacity: 0;
+    transition: opacity 0.55s ease;
+    text-align: center;
+    padding: 4vh 6vw;
+    z-index: 10;
+  }
+  .slide.active { opacity: 1; z-index: 20; }
+  .slide.flash  { opacity: 1; background: #fff; z-index: 30; transition: opacity 0.08s linear; }
+
+  /* === Typography === */
+  .placard {
+    max-width: 70vw;
+    font-family: 'IM Fell English', Georgia, serif;
+    font-size: clamp(20px, 2.6vw, 36px);
+    line-height: 1.5;
+    color: var(--bone);
+    font-style: italic;
+    letter-spacing: 0.5px;
+  }
+  .placard small {
+    display: block; margin-top: 2.5em;
+    font-style: normal; letter-spacing: 4px;
+    font-size: 0.55em; color: var(--gold);
+  }
+
+  .title-small {
+    font-family: 'IM Fell English SC', serif;
+    font-size: clamp(22px, 2.4vw, 30px);
+    letter-spacing: 8px;
+    color: var(--bone);
+    margin-bottom: 1.5em;
+    opacity: 0.85;
+  }
+  .title-big {
+    font-family: 'IM Fell English SC', serif;
+    font-size: clamp(56px, 9vw, 130px);
+    color: var(--gold);
+    letter-spacing: 8px;
+    line-height: 1;
+    text-shadow:
+      0 0 30px rgba(212,168,80,0.4),
+      0 4px 0 rgba(0,0,0,0.6);
+  }
+  .title-big.red {
+    color: var(--blood);
+    text-shadow: 0 0 30px rgba(106,14,8,0.6), 0 4px 0 rgba(0,0,0,0.6);
+  }
+  .chapter {
+    margin-top: 2em;
+    font-family: 'IM Fell English SC', serif;
+    font-size: clamp(18px, 1.8vw, 24px);
+    letter-spacing: 6px;
+    color: var(--gold-bright);
+    opacity: 0.7;
+  }
+
+  .section {
+    font-family: 'IM Fell English SC', serif;
+    font-size: clamp(46px, 7.5vw, 110px);
+    letter-spacing: 12px;
+    color: var(--gold);
+    line-height: 1;
+    text-shadow: 0 0 24px rgba(212,168,80,0.3);
+  }
+  .section .count {
+    display: block;
+    font-size: 0.45em;
+    color: var(--bone);
+    letter-spacing: 6px;
+    margin-bottom: 0.4em;
+    opacity: 0.7;
+  }
+
+  .three-words {
+    display: flex; gap: 4vw; justify-content: center;
+    font-family: 'IM Fell English SC', serif;
+    font-size: clamp(32px, 5vw, 72px);
+    letter-spacing: 6px;
+  }
+  .three-words span {
+    color: var(--gold);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.4s, transform 0.4s;
+  }
+  .three-words.go span:nth-child(1) { opacity: 1; transform: none; transition-delay: 0s; }
+  .three-words.go span:nth-child(2) { opacity: 1; transform: none; transition-delay: 0.35s; color: var(--gold-bright); }
+  .three-words.go span:nth-child(3) { opacity: 1; transform: none; transition-delay: 0.7s; color: var(--blood); }
+
+  .quote {
+    max-width: 70vw;
+    font-style: italic;
+    font-size: clamp(28px, 3.6vw, 52px);
+    line-height: 1.5;
+    color: var(--gold-bright);
+    text-shadow: 0 0 20px rgba(0,0,0,0.9);
+  }
+  .quote::before { content: "“"; opacity: 0.4; }
+  .quote::after  { content: "”"; opacity: 0.4; }
+  .quote-attrib {
+    margin-top: 1.5em;
+    font-style: normal;
+    font-size: 0.5em;
+    letter-spacing: 4px;
+    color: var(--bone); opacity: 0.6;
+  }
+
+  .footer-line {
+    font-family: 'IM Fell English SC', serif;
+    font-size: clamp(16px, 1.6vw, 22px);
+    letter-spacing: 6px;
+    color: var(--bone); opacity: 0.7;
+    margin-top: 1.5em;
+  }
+
+  .wishlist {
+    font-family: 'IM Fell English SC', serif;
+    font-size: clamp(28px, 3.4vw, 48px);
+    letter-spacing: 10px;
+    color: var(--gold);
+    text-shadow: 0 0 30px rgba(212,168,80,0.6);
+    margin-top: 2em;
+  }
+
+  /* Typewriter effect for the William Castle placard */
+  .typewriter {
+    overflow: hidden;
+    border-right: 2px solid var(--gold);
+    white-space: nowrap;
+    animation: blink 0.8s step-end infinite;
+  }
+  @keyframes blink {
+    50% { border-color: transparent; }
+  }
+
+  /* GAMEPLAY HERE markers — visual placeholders where you'll cut in real footage */
+  .gameplay-marker {
+    border: 2px dashed rgba(212,168,80,0.4);
+    padding: 4vh 6vw;
+    color: rgba(212,168,80,0.5);
+    font-family: 'IM Fell English SC', serif;
+    letter-spacing: 6px;
+    font-size: clamp(16px, 1.8vw, 24px);
+    background: rgba(0,0,0,0.4);
+  }
+  .gameplay-marker strong {
+    display: block;
+    font-size: 1.4em;
+    color: var(--gold);
+    margin-bottom: 0.8em;
+  }
+  .gameplay-marker em {
+    display: block;
+    margin-top: 0.6em;
+    font-style: normal;
+    opacity: 0.7;
+    font-size: 0.8em;
+  }
+
+  /* === Control bar (hidden during recording) === */
+  .controls {
+    position: fixed; bottom: 14px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10,6,4,0.85);
+    border: 1px solid var(--gold);
+    padding: 8px 16px;
+    z-index: 200;
+    display: flex; gap: 12px; align-items: center;
+    font-family: 'IM Fell English SC', serif;
+    color: var(--bone); letter-spacing: 2px;
+    font-size: 13px;
+    transition: opacity 0.3s;
+  }
+  .controls.hidden { opacity: 0; pointer-events: none; }
+  .controls button {
+    background: var(--blood); color: var(--bone);
+    border: 1px solid var(--gold);
+    font-family: inherit;
+    letter-spacing: 2px;
+    padding: 4px 12px;
+    cursor: pointer;
+  }
+  .controls button:hover { background: var(--gold); color: var(--velvet); }
+  .controls .time { color: var(--gold); min-width: 80px; }
+  .controls .slidenum { color: var(--gold-bright); min-width: 60px; }
+
+  /* Progress bar */
+  .progress {
+    position: fixed; bottom: 0; left: 0; height: 2px;
+    background: var(--gold);
+    width: 0%;
+    transition: width 0.1s linear;
+    z-index: 199;
+  }
+  .progress.hidden { opacity: 0; }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="vignette"></div>
+
+<!-- Slide 0: William Castle placard (0:00 - 0:06) -->
+<div class="slide" data-start="0" data-end="6.5">
+  <div class="placard">
+    <span class="typewriter" id="castle-line">The Society for Psychical Research assumes no liability for events that occur after the front door is locked.</span>
+    <small>— PLACARD AT THE THRESHOLD</small>
+  </div>
+</div>
+
+<!-- Slide 1: Title card (0:06 - 0:10) -->
+<div class="slide" data-start="6.5" data-end="10">
+  <div class="title-small">ONE NIGHT IN…</div>
+  <div class="title-big red">ASHGROVE HOUSE</div>
+  <div class="chapter">CHAPTER · I</div>
+</div>
+
+<!-- Slide 2: Pitch line (0:10 - 0:14) -->
+<div class="slide" data-start="10" data-end="14">
+  <div class="quote">You have one night to deliver a verdict.</div>
+  <div class="gameplay-marker" style="margin-top:4vh">
+    <strong>[ CUT IN GAMEPLAY ]</strong>
+    Entry Hall painting slow zoom-in · 4 sec
+    <em>Capture: index.html → load → Entry Hall reveal</em>
+  </div>
+</div>
+
+<!-- Slide 3: THREE TRUTHS (0:14 - 0:20) -->
+<div class="slide" data-start="14" data-end="20">
+  <div class="section">THREE TRUTHS</div>
+  <div class="three-words" id="three-truths" style="margin-top:3vh">
+    <span>HAUNTED</span>
+    <span>PARTIAL</span>
+    <span>DEBUNKED</span>
+  </div>
+</div>
+
+<!-- Slide 4: NINE INSTRUMENTS title (0:20 - 0:22) -->
+<div class="slide" data-start="20" data-end="22.5">
+  <div class="section"><span class="count">— NINE —</span>INSTRUMENTS</div>
+</div>
+
+<!-- Slide 5: Tools gameplay marker (0:22 - 0:30) -->
+<div class="slide" data-start="22.5" data-end="30">
+  <div class="gameplay-marker">
+    <strong>[ CUT IN GAMEPLAY · 7.5 sec ]</strong>
+    Fast 1-sec cuts of each tool in action:<br>
+    K-II needle · Spirit Box scanner · Ovilus · SLS grid · EVP waveform ·<br>
+    Thermal reticle · EM pump rings · REM pod · Film camera focus
+    <em>Force truth=haunted in debug to make tools active</em>
+  </div>
+</div>
+
+<!-- Slide 6: MINI-GAMES title (0:30 - 0:32) -->
+<div class="slide" data-start="30" data-end="32.5">
+  <div class="section">MINI&nbsp;·&nbsp;GAMES</div>
+</div>
+
+<!-- Slide 7: Mini-games gameplay marker (0:32 - 0:40) -->
+<div class="slide" data-start="32.5" data-end="40">
+  <div class="gameplay-marker">
+    <strong>[ CUT IN GAMEPLAY · 7.5 sec ]</strong>
+    Ouija planchette spelling ELIZA · Candle leaning ·<br>
+    Piano keys lighting · Photo developing · Tape waveform splice
+    <em>Use Field Notes panel + séance table captures</em>
+  </div>
+</div>
+
+<!-- Slide 8: AN UNRELIABLE WITNESS (0:40 - 0:44) -->
+<div class="slide" data-start="40" data-end="44">
+  <div class="section" style="font-size:clamp(34px,5.5vw,80px)">AN UNRELIABLE WITNESS</div>
+</div>
+
+<!-- Slide 9: Calder quote + gameplay (0:44 - 0:48) -->
+<div class="slide" data-start="44" data-end="48">
+  <div class="quote">Five of the things he tells you are lies.<br>Find the proof.</div>
+  <div class="gameplay-marker" style="margin-top:3vh">
+    <strong>[ CUT IN GAMEPLAY · 4 sec ]</strong>
+    Sort Calder's Claims — drag a document onto a claim
+  </div>
+</div>
+
+<!-- Slide 10: THE HOUSE WILL TALK TO YOU (0:48 - 0:50) -->
+<div class="slide" data-start="48" data-end="50.5">
+  <div class="section" style="font-size:clamp(28px,4.6vw,68px)">THE HOUSE WILL<br>TALK TO YOU</div>
+</div>
+
+<!-- Slide 11: Eliza quote (0:50 - 0:56) -->
+<div class="slide" data-start="50.5" data-end="56">
+  <div class="quote">I was Eliza.<br>I am still here, in the wallpaper.</div>
+  <div class="quote-attrib">— OVILUS · 2:14 AM</div>
+</div>
+
+<!-- Slide 12: Scares montage marker (0:56 - 1:04) -->
+<div class="slide" data-start="56" data-end="64">
+  <div class="gameplay-marker">
+    <strong>[ CUT IN GAMEPLAY · 8 sec — RAPID CUTS ]</strong>
+    3 AM hallway figure · Silver thimble on stair · Breathing east wall ·<br>
+    Rocking chair through doorway · Verdict letter grade landing on A
+    <em>Stinger sounds layer over the music here</em>
+  </div>
+</div>
+
+<!-- Slide 13: Final title (1:04 - 1:06) -->
+<div class="slide" data-start="64" data-end="66.5">
+  <div class="title-small">ONE NIGHT IN…</div>
+  <div class="title-big red">ASHGROVE HOUSE</div>
+</div>
+
+<!-- Slide 14: Wishlist (1:06 - 1:10) -->
+<div class="slide" data-start="66.5" data-end="72">
+  <div class="footer-line">A SILVER AGE INVESTIGATION</div>
+  <div class="wishlist">WISHLIST&nbsp;ON&nbsp;STEAM</div>
+  <div class="footer-line">COMING&nbsp;SOON</div>
+</div>
+
+<!-- Controls -->
+<div class="controls" id="controls">
+  <button id="play-btn">▶ PLAY</button>
+  <button id="restart-btn">↺ RESTART</button>
+  <span class="time" id="time">0.0s</span>
+  <span class="slidenum" id="slidenum">0 / 15</span>
+  <button id="prev-btn">◀</button>
+  <button id="next-btn">▶</button>
+  <button id="hide-btn">HIDE UI (H)</button>
+  <button id="fs-btn">FULLSCREEN (F)</button>
+</div>
+
+<div class="progress" id="progress"></div>
+
+<script>
+(function () {
+  const slides = Array.from(document.querySelectorAll(".slide"));
+  const totalDuration = 72; // seconds
+  const controls = document.getElementById("controls");
+  const progress = document.getElementById("progress");
+  const timeEl = document.getElementById("time");
+  const slideNumEl = document.getElementById("slidenum");
+
+  let playing = false;
+  let t = 0;
+  let lastFrame = 0;
+  let currentSlide = -1;
+
+  function render() {
+    // Find which slide should be active at time t
+    let idx = -1;
+    for (let i = 0; i < slides.length; i++) {
+      const s = slides[i];
+      const start = parseFloat(s.dataset.start);
+      const end = parseFloat(s.dataset.end);
+      if (t >= start && t < end) { idx = i; break; }
+    }
+    if (idx !== currentSlide) {
+      slides.forEach(s => s.classList.remove("active"));
+      if (idx >= 0) {
+        slides[idx].classList.add("active");
+        // Trigger per-slide enter animations
+        if (slides[idx].querySelector("#three-truths")) {
+          setTimeout(() => slides[idx].querySelector("#three-truths").classList.add("go"), 50);
+        } else {
+          const tt = document.getElementById("three-truths");
+          if (tt) tt.classList.remove("go");
+        }
+      }
+      currentSlide = idx;
+    }
+    timeEl.textContent = t.toFixed(1) + "s";
+    slideNumEl.textContent = (Math.max(0, idx) + 1) + " / " + slides.length;
+    progress.style.width = Math.min(100, (t / totalDuration) * 100) + "%";
+  }
+
+  function loop(now) {
+    if (!playing) return;
+    if (!lastFrame) lastFrame = now;
+    const dt = (now - lastFrame) / 1000;
+    lastFrame = now;
+    t += dt;
+    if (t >= totalDuration) {
+      t = totalDuration;
+      playing = false;
+      document.getElementById("play-btn").textContent = "▶ PLAY";
+    }
+    render();
+    if (playing) requestAnimationFrame(loop);
+  }
+
+  function play() {
+    if (t >= totalDuration) t = 0;
+    playing = true;
+    lastFrame = 0;
+    document.getElementById("play-btn").textContent = "❚❚ PAUSE";
+    requestAnimationFrame(loop);
+  }
+  function pause() {
+    playing = false;
+    document.getElementById("play-btn").textContent = "▶ PLAY";
+  }
+  function restart() {
+    t = 0; currentSlide = -1; render();
+  }
+
+  document.getElementById("play-btn").onclick = () => playing ? pause() : play();
+  document.getElementById("restart-btn").onclick = () => { restart(); pause(); };
+  document.getElementById("prev-btn").onclick = () => {
+    pause();
+    const prev = slides.slice().reverse().find(s => parseFloat(s.dataset.start) < t - 0.1);
+    if (prev) t = parseFloat(prev.dataset.start);
+    else t = 0;
+    currentSlide = -1; render();
+  };
+  document.getElementById("next-btn").onclick = () => {
+    pause();
+    const next = slides.find(s => parseFloat(s.dataset.start) > t + 0.1);
+    if (next) t = parseFloat(next.dataset.start);
+    else t = totalDuration;
+    currentSlide = -1; render();
+  };
+
+  function toggleUi() {
+    controls.classList.toggle("hidden");
+    progress.classList.toggle("hidden");
+    document.body.classList.toggle("show-cursor", !controls.classList.contains("hidden"));
+  }
+  document.getElementById("hide-btn").onclick = toggleUi;
+  document.getElementById("fs-btn").onclick = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen();
+  };
+
+  document.addEventListener("keydown", e => {
+    if (e.key === " ") { e.preventDefault(); playing ? pause() : play(); }
+    if (e.key.toLowerCase() === "h") toggleUi();
+    if (e.key.toLowerCase() === "f") document.getElementById("fs-btn").click();
+    if (e.key.toLowerCase() === "r") { restart(); pause(); }
+  });
+
+  // Initial state — show first slide
+  document.body.classList.add("show-cursor");
+  render();
+})();
+</script>
+
+</body>
+</html>

@@ -8,8 +8,8 @@
 <title>One Night In… Ashgrove House</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.5.0">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=0.7.2">
 </head>
 <body>
 <div id="color-grade"></div>
@@ -23,6 +23,10 @@
     <div id="hud-danger" title="Danger level — each notch is one point of aggression">
       <span id="hud-danger-label">— QUIET —</span>
       <span class="hud-danger-meter" id="hud-danger-meter" aria-label="Aggression"></span>
+    </div>
+    <div id="hud-composure" title="Composure — your nerves. Drains under pressure; rest to recover.">
+      <span id="hud-composure-label">— STEADY —</span>
+      <span class="hud-composure-meter" id="hud-composure-meter" aria-label="Composure"></span>
     </div>
     <div id="hud-right">
       <button id="btn-tts-toggle" title="Read aloud (toggle)">🔊</button>
@@ -299,6 +303,10 @@
         <label>Concise mode (TL;DR)</label>
         <input type="checkbox" id="set-concise">
       </div>
+      <div class="settings-row" title="Soft film-grain, scanlines, and a vignette. The 1993 VHS look.">
+        <label>Period filter (CRT / grain)</label>
+        <input type="checkbox" id="set-period-filter">
+      </div>
       <div class="settings-row">
         <label>Temperature</label>
         <select id="set-temp-unit">
@@ -318,7 +326,7 @@
           <option value="male">Male (Price-like)</option>
           <option value="female">Female (Steele-like)</option>
         </select>
-        <span id="tts-voice-label" style="font-size:11px;color:#5a4850"></span>
+        <span id="tts-voice-label" style="display:none"></span>
       </div>
       <div class="settings-row">
         <label>Rate</label>
@@ -338,65 +346,6 @@
       <div class="settings-row">
         <label></label>
         <button id="btn-tts-test">Test voice</button>
-      </div>
-      <hr style="border-color:#2a2022;margin:16px 0">
-      <h3 style="color:#d4c9b8;font-size:13px;letter-spacing:2px;margin-bottom:10px">SPEAK WITH THE HOUSE (optional)</h3>
-      <p style="font-size:12px;color:#8a7565;margin-bottom:10px;font-style:italic">
-        Optional: connect a free AI key so the Ovilus and the "Speak to the house" action reply with words generated live.
-        No key = game works exactly as before (random words). Your key is stored only in this browser.
-      </p>
-      <details class="ai-help-details">
-        <summary>How do I set this up? (free, ~60 seconds)</summary>
-        <div class="ai-help-body">
-          <p><strong>Recommended: Google Gemini (free, no credit card)</strong></p>
-          <ol>
-            <li>Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> in a new tab.</li>
-            <li>Sign in with any Google account.</li>
-            <li>Click <strong>"Create API Key"</strong>, then <strong>"Create API key in new project"</strong>.</li>
-            <li>Copy the key (it starts with <code>AIza…</code>).</li>
-            <li>Come back here, paste it into the <strong>API key</strong> field below, check <strong>Enable AI</strong>, and click <strong>Test connection</strong>. You should see <em>✓ connected</em>.</li>
-          </ol>
-          <p style="margin-top:8px"><strong>What it changes:</strong></p>
-          <ul>
-            <li>The <strong>Ovilus</strong> tool now speaks words generated live (in character as the voice of the dead) instead of picking from a fixed list.</li>
-            <li>A new <strong>"Speak to the house"</strong> action appears in the Entry Hall and Wine Cellar. You can ask the house anything in plain English; it replies in the voice of the Gothic horror genre. Limited to 3 utterances per night.</li>
-            <li>Raises aggression more than using a tool — the house dislikes being addressed directly.</li>
-          </ul>
-          <p style="margin-top:8px"><strong>Other providers:</strong></p>
-          <ul>
-            <li><strong>Groq</strong> — also free. Sign up at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>. Very fast.</li>
-            <li><strong>OpenAI</strong> — requires a paid account at platform.openai.com.</li>
-            <li><strong>Anthropic Claude</strong> — requires a paid account at console.anthropic.com.</li>
-          </ul>
-          <p style="margin-top:8px"><strong>Is my key safe?</strong> Yes. It's stored only in this browser's <em>localStorage</em>, on this device. It's sent only to the provider you chose, directly from your browser. No server of ours ever sees it. Clear the field or uncheck "Enable AI" at any time to disable.</p>
-          <p style="margin-top:8px;color:#8a7565"><em>If you leave this blank, the game works exactly as it did before. No feature is gated behind this.</em></p>
-        </div>
-      </details>
-      <div class="settings-row">
-        <label>Enable AI</label>
-        <input type="checkbox" id="set-ai-enabled">
-      </div>
-      <div class="settings-row">
-        <label>Provider</label>
-        <select id="set-ai-provider">
-          <option value="gemini">Google Gemini (free)</option>
-          <option value="groq">Groq (free)</option>
-          <option value="openai">OpenAI (paid)</option>
-          <option value="anthropic">Anthropic Claude (paid)</option>
-        </select>
-      </div>
-      <div class="settings-row">
-        <label>API key</label>
-        <input type="password" id="set-ai-key" autocomplete="off" placeholder="paste your key" style="flex:1">
-      </div>
-      <div class="settings-row">
-        <label></label>
-        <button id="btn-ai-test">Test connection</button>
-        <span id="ai-test-result" style="font-size:12px;color:#8a7565;margin-left:8px"></span>
-      </div>
-      <div class="settings-row">
-        <label></label>
-        <span id="ai-provider-hint" style="font-size:11px;color:#6a5a4a;font-style:italic"></span>
       </div>
       <hr style="border-color:#2a2022;margin:16px 0">
       <div class="settings-row">
@@ -710,14 +659,26 @@
       <div class="mm-stamp">Presented for your amusement</div>
       <h1 class="title-main mm-title">One Night In&hellip;</h1>
       <div class="mm-series-rule"></div>
-      <div class="mm-story-name">Ashgrove House</div>
-      <div class="mm-story-chapter">— Chapter I —</div>
       <div class="mm-sub">An Investigation in One Night</div>
+
+      <div class="mm-chapter-picker" id="mm-chapter-picker">
+        <button class="mm-chapter-card is-selected" data-story="ashgrove">
+          <div class="mm-cc-chapter">— Chapter I —</div>
+          <div class="mm-cc-name">Ashgrove House</div>
+          <div class="mm-cc-sub">A grandfather's estate. Twelve rooms. Twelve films.</div>
+        </button>
+        <button class="mm-chapter-card" data-story="wyndmere">
+          <div class="mm-cc-chapter">— Chapter II —</div>
+          <div class="mm-cc-name">Wyndmere Hollow</div>
+          <div class="mm-cc-sub">A lake-house, three months later. Wet footprints to the bedroom.</div>
+        </button>
+      </div>
+
       <div class="mm-list">
-        <button class="mm-btn" id="mm-continue">Continue Investigation</button>
-        <button class="mm-btn" id="mm-new">New Investigation</button>
+        <button class="mm-btn mm-btn-primary" id="mm-new">New Investigation</button>
+        <button class="mm-btn" id="mm-continue">Continue</button>
         <button class="mm-btn" id="mm-howtoplay">How to Play</button>
-        <button class="mm-btn" id="mm-guestlog">The Guest Log</button>
+        <button class="mm-btn" id="mm-guestlog">Guest Log</button>
         <button class="mm-btn" id="mm-achievements">Achievements</button>
         <button class="mm-btn" id="mm-options">Options</button>
         <button class="mm-btn" id="mm-credits">Credits</button>
@@ -725,15 +686,6 @@
       </div>
       <button class="mm-delete" id="mm-delete-save">Delete saved investigation</button>
       <div class="mm-stats-slot" id="mm-stats-slot"></div>
-      <div class="mm-upcoming">
-        <div class="mm-upcoming-rule"></div>
-        <div class="mm-upcoming-label">Further Chapters</div>
-        <div class="mm-upcoming-card">
-          <div class="mm-upcoming-chapter">— Chapter II —</div>
-          <div class="mm-upcoming-name">Coming Soon</div>
-          <div class="mm-upcoming-sub">The next investigation is being prepared.</div>
-        </div>
-      </div>
       <div class="mm-version" id="mm-version"></div>
     </div>
   </div>
@@ -1193,24 +1145,35 @@
   </div>
 </div>
 
-<script src="data.js?v=0.5.0"></script>
-<script src="audio.js?v=0.5.0"></script>
-<script src="art.js?v=0.5.0"></script>
-<script src="tts.js?v=0.5.0"></script>
-<script src="game.js?v=0.5.0"></script>
-<script src="danger.js?v=0.5.0"></script>
-<script src="weather.js?v=0.5.0"></script>
-<script src="stats.js?v=0.5.0"></script>
-<script src="achievements.js?v=0.5.0"></script>
-<script src="ai.js?v=0.5.0"></script>
-<script src="scares.js?v=0.5.0"></script>
-<script src="stories.js?v=0.5.0"></script>
-<script src="minigames.js?v=0.5.0"></script>
-<!-- Additional stories register themselves here, after stories.js.
-     Example: <script src="stories/waverly.js"></script> -->
-<script src="settings.js?v=0.5.0"></script>
-<script src="tooltips.js?v=0.5.0"></script>
-<script src="menu.js?v=0.5.0"></script>
+<script src="data.js?v=0.7.2"></script>
+<script src="audio.js?v=0.7.2"></script>
+<script src="art.js?v=0.7.2"></script>
+<script src="art-wyndmere.js?v=0.7.2"></script>
+<script src="tts.js?v=0.7.2"></script>
+<script src="game.js?v=0.7.2"></script>
+<script src="danger.js?v=0.7.2"></script>
+<script src="composure.js?v=0.7.2"></script>
+<script src="weather.js?v=0.7.2"></script>
+<script src="stats.js?v=0.7.2"></script>
+<script src="achievements.js?v=0.7.2"></script>
+<script src="scares.js?v=0.7.2"></script>
+<script src="stories.js?v=0.7.2"></script>
+<script src="minigames.js?v=0.7.2"></script>
+<script src="playability.js?v=0.7.2"></script>
+<script src="playability-wave2.js?v=0.7.2"></script>
+<script src="extras.js?v=0.7.2"></script>
+<script src="fatalframe.js?v=0.7.2"></script>
+<script src="hints.js?v=0.7.2"></script>
+<script src="taunts.js?v=0.7.2"></script>
+<script src="vignettes.js?v=0.7.2"></script>
+<script src="puzzles.js?v=0.7.2"></script>
+<script src="riddles.js?v=0.7.2"></script>
+<script src="crt.js?v=0.7.2"></script>
+<!-- Additional stories register themselves here, after stories.js. -->
+<script src="stories/wyndmere-hollow.js?v=0.7.2"></script>
+<script src="settings.js?v=0.7.2"></script>
+<script src="tooltips.js?v=0.7.2"></script>
+<script src="menu.js?v=0.7.2"></script>
 <script>
   (function boot() {
     try {

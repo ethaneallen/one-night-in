@@ -49,6 +49,7 @@ function advanceTime(mins) {
   if (typeof renderDanger === "function") renderDanger();
   if (typeof checkChapterCard === "function") checkChapterCard();
   if (typeof scareTick === "function") scareTick();
+  if (typeof composureTick === "function") composureTick();
   // Auto-save once per in-game hour after Calder leaves (quiet, no narration)
   if (state.calderLeft && typeof saveGame === "function") {
     const lastAuto = state._lastAutoSave || 0;
@@ -134,14 +135,19 @@ function formatTime() {
 }
 
 // === NARRATION ===
-function narrate(text) {
+function narrate(text, opts) {
   const n = document.getElementById("narration");
   const p = document.createElement("p");
-  p.innerHTML = String(text).replace(/&/g, "&amp;").replace(/<(?!\/?em\b)/g, "&lt;");
+  // Allow our small whitelist of inline tags through; escape everything
+  // else so author HTML in stories renders but stray user input can't
+  // inject markup.
+  p.innerHTML = String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/<(?!\/?(?:em|strong|b|i|u)\b)/g, "&lt;");
   n.appendChild(p);
   n.scrollTop = n.scrollHeight;
   while (n.children.length > 6) n.removeChild(n.firstChild);
-  if (typeof tts !== "undefined") tts.speak(text);
+  if (typeof tts !== "undefined") tts.speak(text, opts);
 }
 function clearNarration() { document.getElementById("narration").innerHTML = ""; }
 
@@ -185,8 +191,23 @@ function logEvidence(type, detail) {
   if (type === "Direct Callout")          markMilestone("first_callout",  "It Answered", "<em>You spoke. It answered, in your own voice volume.</em>");
   if (type === "Confirmation")            markMilestone("first_confirm",  "Two Instruments Agree", "<em>The moment every investigator waits for.</em>");
   if (type === "Solo Session")            markMilestone("first_solo",     "Ten Minutes Alone", "<em>You sat in silence. The house took notice.</em>");
-  if (state.calderCaught.length >= 2)     markMilestone("calder_2",       "The Witness is Unreliable", "<em>Two of Mr. Calder's stories have now been contradicted by paper.</em>");
-  if (state.calderCaught.length >= 4)     markMilestone("calder_4",       "All Five Inconsistencies", "<em>You have caught the groundskeeper in every story he was given.</em>");
+  // Contradiction milestones — the witness's name and the total count
+  // are both story-specific (Calder has 5 claims; Thrale has 6).
+  {
+    const _wId = state._story || "ashgrove";
+    const _witnessLast = _wId === "wyndmere" ? "Mrs. Thrale" : "Mr. Calder";
+    const _witnessRole = _wId === "wyndmere" ? "housekeeper" : "groundskeeper";
+    const _pronoun     = _wId === "wyndmere" ? "she was" : "he was";
+    const _claimTotal  = _wId === "wyndmere" ? 6 : 5;
+    if (state.calderCaught.length >= 2) {
+      markMilestone("calder_2_" + _wId, "The Witness is Unreliable",
+        `<em>Two of ${_witnessLast}'s stories have now been contradicted by paper.</em>`);
+    }
+    if (state.calderCaught.length >= _claimTotal) {
+      markMilestone("calder_all_" + _wId, `All ${_claimTotal} Inconsistencies`,
+        `<em>You have caught the ${_witnessRole} in every story ${_pronoun} given.</em>`);
+    }
+  }
   // Paired-tool synergy: if another tool hit in the same room within 5 min,
   // surface a dramatic confirmation narration. Once per pair per room.
   if (!state._lastHit) state._lastHit = {};
@@ -244,8 +265,11 @@ function logEvidence(type, detail) {
 function renderHud() {
   document.getElementById("hud-time").textContent = formatTime();
   const room = ROOMS[state.currentRoom];
+  const storyId = state._story || "ashgrove";
+  const houseName = storyId === "wyndmere" ? "Wyndmere Hollow" : "Ashgrove House";
   document.getElementById("hud-location").textContent =
-    room ? `Ashgrove House — ${room.name}` : "Ashgrove House";
+    room ? `${houseName} — ${room.name}` : houseName;
+  if (typeof renderComposure === "function") renderComposure();
 }
 
 // Pick the short version if concise mode is on and a short variant exists.
@@ -343,7 +367,8 @@ function renderInventory() {
     d.dataset.tool = t.id;
     if (!available) {
       d.style.opacity = 0.3;
-      d.title = "Available after Calder leaves";
+      const _twId = state._story || "ashgrove";
+      d.title = _twId === "wyndmere" ? "Available after Mrs. Thrale retires" : "Available after Calder leaves";
     } else {
       d.onclick = () => openTool(t.id);
     }
@@ -354,11 +379,18 @@ function renderInventory() {
 function renderMap() {
   const g = document.getElementById("map-grid");
   g.innerHTML = "";
-  for (const id of ROOM_ORDER) {
+  // Stories may provide their own map ordering via state._roomOrder.
+  // Fall back to the Ashgrove ROOM_ORDER constant.
+  const order = (state._roomOrder && state._roomOrder.length) ? state._roomOrder : ROOM_ORDER;
+  // Also lock the chapter's starting outdoor room once the witness has
+  // shut the door — works for both Ashgrove ("drive") and Wyndmere ("wm_jetty").
+  const startOutdoor = order[0];
+  for (const id of order) {
     const r = ROOMS[id];
+    if (!r) continue;
     const d = document.createElement("div");
     d.className = "map-room" + (state.currentRoom === id ? " current" : "");
-    if (id === "drive" && state.calderLeft) d.classList.add("locked");
+    if (id === startOutdoor && state.calderLeft) d.classList.add("locked");
     // Status markers for deployed equipment
     let markers = "";
     const evpPlacedAt = state.evpPlacements ? state.evpPlacements[id] : undefined;
@@ -385,8 +417,8 @@ function renderMap() {
     }
     d.innerHTML = `<span class="floor">${r.floor}</span>${r.name}${markers}`;
     d.onclick = () => {
-      if (id === "drive" && state.calderLeft) {
-        narrate("The front door is locked from the outside. You cannot leave until sunrise.");
+      if (id === startOutdoor && state.calderLeft) {
+        narrate("The way out is closed until sunrise.");
         return;
       }
       travelTo(id, true);
@@ -429,8 +461,11 @@ function renderJournal() {
   }
   const c = document.getElementById("journal-calder");
   if (state.calderCaught.length > 0) {
+    const _jId = state._story || "ashgrove";
+    const _witnessName = _jId === "wyndmere" ? "Mrs. Thrale" : "Mr. Calder";
+    const _claimTotal  = _jId === "wyndmere" ? 6 : 5;
     c.innerHTML = `<details class="journal-group calder-group" open>
-      <summary><span class="jg-name">Inconsistencies caught</span><span class="jg-count">${state.calderCaught.length} / 5</span></summary>
+      <summary><span class="jg-name">${_witnessName} — inconsistencies caught</span><span class="jg-count">${state.calderCaught.length} / ${_claimTotal}</span></summary>
       <div class="journal-group-body">${state.calderCaught.map(t => `<div class="journal-entry">${t}</div>`).join("")}</div>
     </details>`;
   } else {
@@ -490,31 +525,65 @@ function tickAmbient() {
   if (!state.calderLeft) return;
   if (Math.random() < 0.3) {
     const t = state.truth;
-    const lines = {
-      haunted: {
-        nursery: "Something creaks in the east wall. Not a settling-house creak. Something with timing.",
-        library: "The spines of the ledgers are not quite in the order you left them.",
-        upstairs_hall: "You feel you are being watched from the far end of the hall.",
-        master: "The east wall is breathing. Shallow, steady.",
-        wine_cellar: "The temperature drops as you reach the bottom step.",
-        parlor: "The portrait's eyes, you think, have moved.",
-        study: "The tape machine clicks once on its own.",
-        default: "The house is awake tonight."
-      },
-      partial: {
-        nursery: "A child, somewhere behind the walls, is crying. You tell yourself it's the wind.",
-        default: "The house settles. Old wood, old pipes."
-      },
-      debunked: {
-        kitchen: "A copper pipe thrums. Water hammer. Nothing more.",
-        master: "The wall flexes — once. You can feel the draft that does it.",
-        default: "Old house. Drafts, creaks. Ordinary."
-      }
-    };
+    const sId = state._story || "ashgrove";
+    // Wyndmere uses its own room-id keyspace (wm_*). Pick the right table.
+    const lines = sId === "wyndmere" ? AMBIENT_WYNDMERE : AMBIENT_ASHGROVE;
     const pool = lines[t] || lines.debunked;
     narrate(pool[room.id] || pool.default);
   }
 }
+
+const AMBIENT_ASHGROVE = {
+  haunted: {
+    nursery: "Something creaks in the east wall. Not a settling-house creak. Something with timing.",
+    library: "The spines of the ledgers are not quite in the order you left them.",
+    upstairs_hall: "You feel you are being watched from the far end of the hall.",
+    master: "The east wall is breathing. Shallow, steady.",
+    wine_cellar: "The temperature drops as you reach the bottom step.",
+    parlor: "The portrait's eyes, you think, have moved.",
+    study: "The tape machine clicks once on its own.",
+    default: "The house is awake tonight."
+  },
+  partial: {
+    nursery: "A child, somewhere behind the walls, is crying. You tell yourself it's the wind.",
+    default: "The house settles. Old wood, old pipes."
+  },
+  debunked: {
+    kitchen: "A copper pipe thrums. Water hammer. Nothing more.",
+    master: "The wall flexes — once. You can feel the draft that does it.",
+    default: "Old house. Drafts, creaks. Ordinary."
+  }
+};
+
+const AMBIENT_WYNDMERE = {
+  haunted: {
+    wm_foyer:      "The hydrangeas on the half-moon table have been freshly arranged. They were not, when you came in.",
+    wm_morning:    "The easel creaks, very slightly, as though leaned upon.",
+    wm_library:    "The wing-back chair, you would swear, was angled three inches further to the door a moment ago.",
+    wm_kitchen:    "The kettle, just off the boil when you arrived, is just off the boil still.",
+    wm_upper_hall: "A column of cold air stands at the head of the stair, the exact width of a woman.",
+    wm_master:     "Eleanor's hairbrush has been moved. Not far. Carefully.",
+    wm_viv_room:   "The window opens a hand's breadth and closes again, unhurried, behind you.",
+    wm_attic_door: "From beyond the padlock — listening silence. The kind that leans against the wood.",
+    wm_attic:      "The doll has not turned. You are not, you tell yourself, certain it did not.",
+    wm_chapel:     "The typewriter on the lectern types a single key. The carriage does not advance.",
+    wm_boathouse:  "The lantern flame leans away from the doorway, toward the black water.",
+    wm_lakeshore:  "The lake breathes against the stones in a register that is, very nearly, your own name.",
+    default:       "Wyndmere is awake tonight."
+  },
+  partial: {
+    wm_viv_room:   "A draft from the lake, of course. Damp wood. Nothing more.",
+    wm_chapel:     "Old pews settle. Nothing rises in answer.",
+    wm_attic_door: "From the other side, the listening silence. It is a quality of certain rooms.",
+    default:       "The lake-house settles. Cedar shrinks; copper expands."
+  },
+  debunked: {
+    wm_kitchen:    "The icebox motor cycles. Refrigerant in a tired compressor.",
+    wm_morning:    "Condensation behind the portrait's glass distorts the brushwork.",
+    wm_viv_room:   "The carpet is wet because the window's seal has failed. Lake air, lake damp.",
+    default:       "Old lake-house. Wind off the water. Ordinary."
+  }
+};
 
 // === HOTSPOT HANDLERS ===
 function handleHotspot(h) {
@@ -534,12 +603,27 @@ function handleHotspot(h) {
     case "seance":       return openSeance();
     case "seance_bell":  return ringSeanceBell();
     case "combo":        return openComboLock(h.target);
-    case "speak_house":  return openSpeakToHouse();
+    case "rest_master":  return examineObject("wm_rest_master");
     default: narrate("Nothing happens.");
   }
 }
 
 function examineObject(target) {
+  // Wyndmere — special examine targets that open minigames or set flags.
+  if (target === "wm_latin_typewriter" && typeof openLatinTypewriter === "function") {
+    return openLatinTypewriter();
+  }
+  if (target === "wm_shore_stones" && typeof openShoreStones === "function") {
+    return openShoreStones();
+  }
+  if (target === "wm_padlock") {
+    state._wmFlags = state._wmFlags || {};
+    state._wmFlags.examined_padlock = true;
+    // Also surface this to the dialogue gate engine (CALDER_DIALOGUE press
+    // options use `requires: "examined_padlock"` as a state-flag key).
+    state.examined_padlock = true;
+  }
+
   const desc = EXAMINATIONS[target];
   if (desc) narrate(desc);
   else narrate("You look, but find nothing of note.");
@@ -656,7 +740,9 @@ function openDocument(id) {
     const claimText = CALDER_CONTRADICTIONS[d.contradicts];
     if (claimText && !state.calderCaught.includes(claimText)) {
       state.calderCaught.push(claimText);
-      narrate(`[You've caught Calder in a contradiction: ${claimText}]`);
+      const _cwId = state._story || "ashgrove";
+      const _witness = _cwId === "wyndmere" ? "Mrs. Thrale" : "Calder";
+      narrate(`[You've caught ${_witness} in a contradiction: ${claimText}]`);
     }
   }
 }
@@ -690,6 +776,16 @@ function openDialogue(nodeId) {
   const c = document.getElementById("dialogue-choices");
   c.innerHTML = "";
   for (const ch of node.choices) {
+    // Gate [Press] options on prerequisite evidence:
+    //   requires: "<doc_id>"           — player must have read that document
+    //   requires: "<flag>"             — state.<flag> must be truthy
+    // Choices without `requires` are always shown.
+    if (ch.requires) {
+      const req = ch.requires;
+      const haveDoc = state.docsRead && state.docsRead.has && state.docsRead.has(req);
+      const haveFlag = !!state[req];
+      if (!haveDoc && !haveFlag) continue;
+    }
     const b = document.createElement("button");
     b.textContent = ch.text;
     b.onclick = () => {
@@ -710,11 +806,16 @@ function calderLeaves() {
   advanceTime(90);
   audio.sfx("door");
   setTimeout(() => audio.sfx("lock"), 400);
-  travelTo("entry_hall", false);
+  // Per-story interior room. Stories may declare `lockedInRoom`; otherwise
+  // fall back to Ashgrove's entry hall for the default chapter.
+  const storyId = state._story || "ashgrove";
+  const st = (typeof STORIES !== "undefined") ? STORIES[storyId] : null;
+  const interior = (st && st.lockedInRoom) || (storyId === "wyndmere" ? "wm_foyer" : "entry_hall");
+  travelTo(interior, false);
   if (typeof showIntertitle === "function") {
     showIntertitle("THE DOOR IS CLOSED",
       "<em>The bolt throws itself, without hurry, as bolts will in houses which have long since decided upon the matter. You are alone — which is, of course, an approximation.</em>",
-      { once: "calder_left" });
+      { once: "door_closed_" + storyId });
   }
   // Delay tool availability: give a beat of dread first.
   state._toolsUnlocked = false;
@@ -1148,6 +1249,7 @@ function cameraDecidePhoto(idx, decision) {
       state.entitiesSeen.add(a.entityId);
       showMilestone("A FIGURE IN THE FRAME", `<em>Photograph #${idx + 1} shows ${entName}.</em>`);
       if (typeof unlockAchievement === "function") unlockAchievement("photo_figure");
+      if (typeof composureOnPhotoFigure === "function") composureOnPhotoFigure();
     } else {
       const label = a.type === "orb" ? "Photo — Orb" : a.type === "smudge" ? "Photo — Smudge" : "Photo — Mist";
       logEvidence(label, `Photo #${idx + 1} in ${rName}: anomalous ${a.type} logged as paranormal.`);
@@ -1540,31 +1642,8 @@ function spiritLogWord(word, type) {
 
 // --- Ovilus ---
 function toolOvilus() {
-  // If AI is enabled, try to get a spirit word from the model. Falls back
-  // to the random word pool if the call fails or times out (1.5s cap).
-  if (typeof aiIsEnabled === "function" && aiIsEnabled()) {
-    renderOvilusThinking();
-    aiOvilusRace().then(aiWord => {
-      renderOvilus(aiWord ? { word: aiWord.toUpperCase(), type: "clue", fromAI: true } : pickWord(state.currentRoom));
-    });
-    return;
-  }
   const w = pickWord(state.currentRoom);
   renderOvilus(w);
-}
-
-async function aiOvilusRace() {
-  const roomName = ROOMS[state.currentRoom]?.name || state.currentRoom;
-  const lastEvidence = (state.evidence && state.evidence.slice(-1)[0]) || null;
-  const detail = lastEvidence ? `Last logged: ${lastEvidence.type} — ${lastEvidence.detail}` : "";
-  const p = aiOvilusWord({ roomName, detail });
-  const timeout = new Promise(resolve => setTimeout(() => resolve(null), 4000));
-  const word = await Promise.race([p, timeout]);
-  // Sanitize to 1-2 words max
-  if (!word) return null;
-  const parts = word.split(/\s+/).slice(0, 2);
-  const clean = parts.join(" ").replace(/[^\w\s'-]/g, "").trim();
-  return clean || null;
 }
 
 function renderOvilusThinking() {
@@ -1580,6 +1659,7 @@ function renderOvilusThinking() {
       <div class="rivet-bl">●</div><div class="rivet-br">●</div>
     </div>`);
 }
+
 
 function renderOvilus(w) {
   advanceTime(2);
@@ -2440,9 +2520,11 @@ function showVerdict() {
     document.body.appendChild(sweep);
     // Quiet one intertitle too — "SUNRISE"
     if (typeof showIntertitle === "function") {
-      showIntertitle("SUNRISE",
-        "<em>The front door unlocks. The executor expects a verdict.</em>",
-        { once: "sunrise" });
+      const _sId = state._story || "ashgrove";
+      const _sunProse = _sId === "wyndmere"
+        ? "<em>The lake gives back the light, grudgingly. The solicitor expects a verdict.</em>"
+        : "<em>The front door unlocks. The executor expects a verdict.</em>";
+      showIntertitle("SUNRISE", _sunProse, { once: "sunrise_" + _sId });
     }
     // Open the verdict overlay after the sweep has had time to bloom
     setTimeout(() => {
@@ -2635,15 +2717,61 @@ function submitVerdict(choice) {
   const base = correct ? 25000 : 0; // the fee itself requires a correct verdict
   const archivistBonus = state._tapeCompletionBonus ? 2000 : 0;
   const comboBonus = state._comboPayout || 0;
-  const finalPot = Math.round(base + investigationPay * multiplier) + coverageBonus + calderBonus + namingBonus + archivistBonus + comboBonus;
+  const rawPot = Math.round(base + investigationPay * multiplier) + coverageBonus + calderBonus + namingBonus + archivistBonus + comboBonus;
+  // Hint penalty: each hint the player asked for costs HINTS.COST_PER_HINT
+  // off the final payout. Penalty is *always* applied, even on wrong
+  // verdicts — the house already took its fee in nerves.
+  const hintsUsedCount = (state._hintsUsed || 0);
+  const hintPenalty = (typeof HINTS !== "undefined") ? HINTS.totalPenalty() : (hintsUsedCount * 1500);
+  const finalPot = Math.max(0, rawPot - hintPenalty);
 
   // SPOILER-FREE verdict screen. The actual truth, the entity identity,
   // the category labels ("EVP whispers" etc.) all leak the answer and
   // ruin replay. Player sees: accepted/rejected, totals, and a button
   // to optionally reveal the full debrief if they want spoilers.
+  const _vSid = state._story || "ashgrove";
+  const _employer = _vSid === "wyndmere" ? "solicitor" : "executor";
   const outcome = correct
-    ? `<div class="verdict-correct"><strong>The executor accepts your verdict.</strong></div>`
-    : `<div class="verdict-wrong"><strong>The executor rejects your verdict.</strong> The base fee is withheld.</div>`;
+    ? `<div class="verdict-correct"><strong>The ${_employer} accepts your verdict.</strong></div>`
+    : `<div class="verdict-wrong"><strong>The ${_employer} rejects your verdict.</strong> The base fee is withheld.</div>`;
+
+  // --- FINAL DISPOSITION (multi-ending tier) ---
+  // Classified by: correctness, naming accuracy, composure survived, tool
+  // coverage. This is the line players will screenshot and share.
+  const composureLeft = typeof state.composure === "number" ? state.composure : 100;
+  const composureBroke = state._composureBroken === true;
+  const goodNaming = namingBonus >= 4000;
+  let endingKey, endingTitle, endingFlavor;
+  if (correct && goodNaming && !composureBroke && toolsUsed >= 6 && composureLeft >= 50) {
+    endingKey = "vindicated";
+    endingTitle = "VINDICATED";
+    endingFlavor = "<em>You leave the house with your hands steady and your file complete. The ${_employer} files your account in a drawer marked <strong>RESOLVED</strong>. Few investigators see that drawer.</em>";
+  } else if (correct && (composureBroke || composureLeft < 30)) {
+    endingKey = "haunted_by_it";
+    endingTitle = "HAUNTED BY IT";
+    endingFlavor = "<em>You named it correctly. You will not, however, sleep with the light off for a while. The work was done; the cost was not, you suspect, billed in pounds.</em>";
+  } else if (correct) {
+    endingKey = "honest_account";
+    endingTitle = "AN HONEST ACCOUNT";
+    endingFlavor = "<em>Your verdict stands. Some questions remain \u2014 they always do, in this work \u2014 but the principal claim is settled.</em>";
+  } else if (!correct && finalPot > 0) {
+    endingKey = "complicit";
+    endingTitle = "COMPLICIT";
+    endingFlavor = "<em>You took the partial fee. The ${_employer} accepts your investigation, if not your conclusion. The house remains, in the records, what it would prefer to be remembered as.</em>";
+  } else {
+    endingKey = "dismissed";
+    endingTitle = "DISMISSED";
+    endingFlavor = "<em>The ${_employer} reads your account, sets it down, and reads it once more. You will not, you understand, be retained again.</em>";
+  }
+  endingFlavor = endingFlavor.replace(/\$\{_employer\}/g, _employer);
+  state._endingKey = endingKey;
+  const dispositionLine = `
+    <div class="final-disposition" style="margin:14px 0 6px;padding:10px 14px;border:1px solid #3a2818;background:linear-gradient(180deg,rgba(58,40,24,0.25),rgba(20,12,8,0.4));font-family:var(--serif-display);text-align:center">
+      <div style="font-size:11px;letter-spacing:3px;color:#8a7565">\u2014 FINAL DISPOSITION \u2014</div>
+      <div style="font-size:18px;letter-spacing:4px;color:#e8d0a0;margin:4px 0 8px">${endingTitle}</div>
+      <div style="font-size:13px;color:#c8b8a0;font-style:italic;letter-spacing:0.4px">${endingFlavor}</div>
+    </div>
+  `;
 
   // Strip category descriptors for the per-line breakdown. Show count + total only.
   const sanitizedLines = lines.map(ln => {
@@ -2661,14 +2789,15 @@ function submitVerdict(choice) {
     ${namingBonus ? `<p>Identification bonus applied.</p>` : ""}
     ${archivistBonus ? `<p>Archivist bonus (all tapes heard): +$${archivistBonus.toLocaleString()}</p>` : ""}
     ${comboBonus ? `<p>Puzzle rewards: +$${comboBonus.toLocaleString()}</p>` : ""}
+    ${hintPenalty ? `<p style="color:#c05050">Hints requested: ${hintsUsedCount} × $${(hintPenalty / Math.max(1,hintsUsedCount)).toLocaleString()} = <strong>−$${hintPenalty.toLocaleString()}</strong></p>` : ""}
     <p style="margin-top:12px;font-size:16px">Total payout: <strong>$${finalPot.toLocaleString()}</strong></p>
     <div style="margin-top:18px;padding-top:14px;border-top:1px solid #2a1810">
-      <button id="verdict-reveal-btn" style="font-family:var(--serif-display);font-size:11px;letter-spacing:2px">Read the executor's dossier (spoilers)</button>
+      <button id="verdict-reveal-btn" style="font-family:var(--serif-display);font-size:11px;letter-spacing:2px">Read the ${_employer}'s dossier (spoilers)</button>
       <div id="verdict-reveal" style="display:none;margin-top:14px"></div>
     </div>
   `;
 
-  resultEl.innerHTML = outcome + breakdown;
+  resultEl.innerHTML = outcome + dispositionLine + breakdown;
 
   // Persistent stats: record this verdict.
   if (typeof statsOnVerdict === "function") {
@@ -2706,6 +2835,10 @@ function submitVerdict(choice) {
   document.getElementById("verdict-restart").classList.remove("hidden");
 }
 function truthFlavor() {
+  // Story-flavored end-of-night epilogue. Wyndmere Hollow gets its own
+  // ending text; everything else falls through to the Ashgrove branch.
+  const _sId = state._story || "ashgrove";
+  if (_sId === "wyndmere") return wyndmereTruthFlavor();
   const name = state._namedEntity || "";
   const caught = state.calderCaught.length;
   const saw = state.entitiesSeen;
@@ -2774,12 +2907,52 @@ function truthFlavor() {
 
 document.getElementById("verdict-restart").addEventListener("click", () => location.reload());
 
+// Wyndmere Hollow end-of-night flavor. Mirrors truthFlavor() in tone but
+// keeps the Carrow family, Lake Wyndmere, and Mrs. Thrale at the centre.
+function wyndmereTruthFlavor() {
+  const name = (state._namedEntity || "").toLowerCase();
+  const saw = state.entitiesSeen || new Set();
+  const parts = [];
+  if (state.truth === "haunted") {
+    if (/beatrice|the\s+child|girl\s+in\s+the\s+lake/.test(name)) {
+      parts.push("<em>You have named Beatrice — the child Lake Wyndmere kept in 1962 and has not, in five years, returned. The name is correct, and it is not, strictly, the whole of the answer.</em>");
+    } else if (/vivian|the\s+wife|the\s+painter/.test(name)) {
+      parts.push("<em>You named Vivian. She drowned in the spring; she has not, since, kept entirely to the lake. The wing-back chair in the library is no longer empty after midnight.</em>");
+    } else if (/the\s+lake|wyndmere|something\s+below|the\s+water/.test(name)) {
+      parts.push("<em>You named the lake itself — which is, in the opinion of those who have lived beside it longest, the truest answer one can give.</em>");
+    }
+    parts.push("The solicitor accepts your verdict without comment. The house is closed for the winter. Mrs. Thrale stays on, as she has stayed on, and the boathouse lantern is lit each night against a guest who is no longer expected, and yet — every spring — arrives.");
+    if (saw && saw.has && saw.has("woman_in_lake")) parts.push("<em>You saw her, beneath the water, looking up. You will see her again, in glass, in tea, in the dark behind your eyes, for some considerable time.</em>");
+  }
+  else if (state.truth === "partial") {
+    parts.push("Your verdict is technically correct. Lake Wyndmere did take a child in 1962; the rest is grief, weather, and the particular acoustics of a house built too close to deep water.");
+    parts.push("<em>The solicitor reviews your evidence with the patience of a man who has read this report, in essentials, before. He thanks you. He does not ask you to return.</em>");
+  }
+  else { // debunked
+    if (/\b(none|nothing|no\s+one|nobody|no\s+entity)\b/.test(name)) {
+      parts.push("<em>You named no entity, and the lake did not contradict you.</em>");
+      parts.push("Wyndmere Hollow is, in the end, a lake-house — cold drafts off the water, a settling timber, a family that lost a daughter and could not, after, agree on how. Mrs. Thrale shows you to the launch at dawn. She does not wave.");
+    } else {
+      parts.push("Your verdict is correct; your identification is generous. The Carrow estate sells in the spring. The lake, by the terms of the sale, is included.");
+    }
+  }
+  if (state.docsRead && state.docsRead.has && state.docsRead.has("viv_diary")) {
+    parts.push("<em>Vivian's last entry stays with you: 'she is in the wallpaper now, and we are not, after all, alone.' You will read it a second time, and then never again.</em>");
+  }
+  return parts.join(" ");
+}
+
 // === BOOT ===
 document.getElementById("btn-start").addEventListener("click", () => {
   // If multiple stories are registered and the user picked one, load it.
   if (typeof STORIES !== "undefined") {
-    const picker = document.getElementById("story-picker");
-    const chosen = picker ? picker.value : "ashgrove";
+    // Preferred source: the main-menu chapter picker.
+    let chosen = window._selectedStory;
+    if (!chosen) {
+      // Legacy fallback: the auto-injected <select> picker.
+      const picker = document.getElementById("story-picker");
+      chosen = picker ? picker.value : "ashgrove";
+    }
     if (chosen && chosen !== "ashgrove" && typeof loadStory === "function") {
       loadStory(chosen);
     }
@@ -2802,7 +2975,19 @@ document.getElementById("btn-start").addEventListener("click", () => {
   // Build a prologue panel over the same backdrop
   const prologue = document.createElement("div");
   prologue.className = "overlay-inner title-panel prologue-panel";
-  prologue.innerHTML = `
+  const _pSid = state._story || "ashgrove";
+  const _prologueInner = _pSid === "wyndmere"
+    ? `
+    <div class="title-stamp">A word, before we begin</div>
+    <div class="prologue-text" id="prologue-text">
+      <p>You have, I see, accepted the terms. Very well.</p>
+      <p>The solicitor you will not meet; the fee, should you collect it, is generous. The house before you is a <em>peculiar</em> arrangement — less a residence, in the opinion of the present narrator, than a <em>vigil kept</em>, and the lake before it less a body of water than an <em>open question</em>.</p>
+      <p>You will be given instruments. You will be given, if you will accept it, a <em>warning</em>: the rooms of Wyndmere Hollow are not, strictly speaking, empty — and the lake outside them is not, strictly speaking, asleep. Sleep in the master bedroom, if you sleep at all. Do not, on any account, sleep in the attic.</p>
+      <p class="prologue-sign">— The Management</p>
+    </div>
+    <button id="btn-prologue-continue">Continue into the night</button>
+  `
+    : `
     <div class="title-stamp">A word, before we begin</div>
     <div class="prologue-text" id="prologue-text">
       <p>You have, I see, accepted the terms. Very well.</p>
@@ -2812,6 +2997,7 @@ document.getElementById("btn-start").addEventListener("click", () => {
     </div>
     <button id="btn-prologue-continue">Continue into the night</button>
   `;
+  prologue.innerHTML = _prologueInner;
   titlePanel.parentNode.insertBefore(prologue, titlePanel.nextSibling);
   // Speak the prologue aloud if TTS is on
   setTimeout(() => {
@@ -2838,6 +3024,8 @@ document.getElementById("btn-start").addEventListener("click", () => {
 // Separated so the how-to and the direct path both reuse it.
 function startGameProper() {
   if (typeof statsOnRunStart === "function") statsOnRunStart();
+  // Initialize composure (player-side sanity) for this run.
+  if (typeof initComposure === "function") initComposure();
   // Roll weather for this investigation and apply it.
   if (typeof rollWeather === "function") {
     const w = rollWeather();
@@ -2845,14 +3033,25 @@ function startGameProper() {
     state._weatherObj = w;
   }
   if (typeof showIntertitle === "function") {
-    showIntertitle("A NIGHT AT ASHGROVE",
-      "<em>The executor's letter was brief; the fee, considerable. One does not read such letters a second time. One packs one's instruments.</em>",
-      { once: "opening" });
+    const storyId = state._story || "ashgrove";
+    if (storyId === "wyndmere") {
+      showIntertitle("A NIGHT AT WYNDMERE",
+        "<em>The solicitor's instructions were precise: arrive before dark, do not bring a companion, sleep in the master bedroom if you sleep at all. One does not refuse such fees. One packs one's instruments.</em>",
+        { once: "opening_wyndmere" });
+    } else {
+      showIntertitle("A NIGHT AT ASHGROVE",
+        "<em>The executor's letter was brief; the fee, considerable. One does not read such letters a second time. One packs one's instruments.</em>",
+        { once: "opening" });
+    }
   }
   renderRoom();
   renderDanger();
   setTimeout(() => {
-    narrate("<em>The executor's letter directed you to arrive before sundown, and you are — as is customary — cutting it close.</em>");
+    const sId = state._story || "ashgrove";
+    const openingLine = sId === "wyndmere"
+      ? "<em>The solicitor's instructions directed you to arrive before sundown, and you are — as is customary — cutting it close. Lake Wyndmere does not love latecomers.</em>"
+      : "<em>The executor's letter directed you to arrive before sundown, and you are — as is customary — cutting it close.</em>";
+    narrate(openingLine);
     if (state._weatherObj && typeof narrateWeather === "function") {
       setTimeout(() => narrateWeather(state._weatherObj), 2000);
     }

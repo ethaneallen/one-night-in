@@ -11,7 +11,7 @@ const settings = {
   contrast: "normal",
   reduceMotion: false,
   debugUnlocked: false,
-  ttsEnabled: false,
+  ttsEnabled: true,
   ttsGender: "male",
   ttsRate: 90,
   ttsPitch: 90,
@@ -20,9 +20,7 @@ const settings = {
   skipWarning: false, // once accepted, returning players skip straight to prologue
   skipHowto: false,   // once the how-to is dismissed with the checkbox, skip it next time
   conciseMode: false, // TL;DR mode — swap the prose for short summaries
-  aiEnabled: false,   // optional AI-backed Ovilus + Speak-to-House
-  aiProvider: "gemini", // "gemini" | "groq" | "openai" | "anthropic"
-  aiApiKey: ""        // user's own API key (never leaves their machine)
+  periodFilter: false // CRT scanlines + film grain + vignette overlay
 };
 
 function loadSettings() {
@@ -43,6 +41,7 @@ function applySettings() {
   document.body.classList.toggle("reduce-motion", settings.reduceMotion);
   document.body.classList.toggle("concise", !!settings.conciseMode);
   if (typeof audio !== "undefined") audio.updateVolumes();
+  if (typeof crtFilter !== "undefined" && crtFilter.apply) crtFilter.apply();
 }
 function reflectSettingsToUI() {
   const $ = id => document.getElementById(id);
@@ -55,17 +54,8 @@ function reflectSettingsToUI() {
   $("set-reduce-motion").checked = settings.reduceMotion;
   const conciseEl = $("set-concise");
   if (conciseEl) conciseEl.checked = !!settings.conciseMode;
-  const aiEnEl = $("set-ai-enabled");
-  if (aiEnEl) aiEnEl.checked = !!settings.aiEnabled;
-  const aiProvEl = $("set-ai-provider");
-  if (aiProvEl) aiProvEl.value = settings.aiProvider || "gemini";
-  const aiKeyEl = $("set-ai-key");
-  if (aiKeyEl) aiKeyEl.value = settings.aiApiKey || "";
-  const hintEl = $("ai-provider-hint");
-  if (hintEl && typeof AI_PROVIDERS !== "undefined") {
-    const p = AI_PROVIDERS[settings.aiProvider || "gemini"];
-    hintEl.textContent = p ? p.hint : "";
-  }
+  const periodEl = $("set-period-filter");
+  if (periodEl) periodEl.checked = !!settings.periodFilter;
   $("settings-debug-panel").classList.toggle("hidden", !settings.debugUnlocked);
   $("set-temp-unit").value = settings.tempUnit || "F";
   $("set-tts-enabled").checked = settings.ttsEnabled;
@@ -120,44 +110,14 @@ function initSettings() {
       if (typeof renderRoom === "function" && state && state.currentRoom) renderRoom();
     });
   }
-  // AI settings
-  const aiEnEl = $("set-ai-enabled");
-  if (aiEnEl) aiEnEl.addEventListener("change", e => {
-    settings.aiEnabled = e.target.checked;
-    saveSettings();
-  });
-  const aiProvEl = $("set-ai-provider");
-  if (aiProvEl) aiProvEl.addEventListener("change", e => {
-    settings.aiProvider = e.target.value;
-    saveSettings();
-    reflectSettingsToUI();
-  });
-  const aiKeyEl = $("set-ai-key");
-  if (aiKeyEl) aiKeyEl.addEventListener("change", e => {
-    settings.aiApiKey = e.target.value.trim();
-    saveSettings();
-  });
-  const aiTestBtn = $("btn-ai-test");
-  if (aiTestBtn) aiTestBtn.addEventListener("click", async () => {
-    const result = $("ai-test-result");
-    if (result) { result.textContent = "testing..."; result.style.color = "#8a7565"; }
-    if (typeof aiTestConnection !== "function") {
-      if (result) { result.textContent = "ai module not loaded"; result.style.color = "#c06040"; }
-      return;
-    }
-    // Pick up the latest key from the input in case it wasn't blurred
-    const keyEl = $("set-ai-key");
-    if (keyEl) { settings.aiApiKey = keyEl.value.trim(); saveSettings(); }
-    // And flip enabled on temporarily so the test fires even before the checkbox
-    const wasEnabled = settings.aiEnabled;
-    settings.aiEnabled = true;
-    const r = await aiTestConnection();
-    settings.aiEnabled = wasEnabled;
-    if (result) {
-      if (r.ok) { result.textContent = "✓ connected: " + r.response.slice(0, 40); result.style.color = "#80c080"; }
-      else { result.textContent = "✗ " + r.error; result.style.color = "#c06040"; }
-    }
-  });
+  const periodEl = $("set-period-filter");
+  if (periodEl) {
+    periodEl.addEventListener("change", e => {
+      settings.periodFilter = e.target.checked;
+      applySettings();
+      saveSettings();
+    });
+  }
   $("set-temp-unit").addEventListener("change", e => {
     settings.tempUnit = e.target.value; saveSettings();
   });
@@ -430,15 +390,21 @@ function initSettings() {
   });
   $("btn-delete-save").addEventListener("click", () => {
     if (!hasSave()) { alert("No saved game to delete."); return; }
-    if (!confirm("Delete the saved investigation? This cannot be undone.")) return;
-    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
-    alert("Saved game deleted.");
+    if (!confirm("Delete ALL saved investigations? This cannot be undone.")) return;
+    try {
+      localStorage.removeItem(SAVE_KEY);
+      localStorage.removeItem(saveKeyFor("ashgrove"));
+      localStorage.removeItem(saveKeyFor("wyndmere"));
+    } catch (e) {}
+    alert("Saved games deleted.");
   });
   $("btn-reset-all").addEventListener("click", () => {
     if (!confirm("Reset EVERYTHING — saved game, all settings, AND your investigation history?\n\nThis cannot be undone.")) return;
     if (!confirm("Really reset everything? Last chance.")) return;
     try {
       localStorage.removeItem(SAVE_KEY);
+      localStorage.removeItem(saveKeyFor("ashgrove"));
+      localStorage.removeItem(saveKeyFor("wyndmere"));
       localStorage.removeItem(SETTINGS_KEY);
       if (typeof resetStats === "function") resetStats();
     } catch (e) {}
@@ -467,8 +433,25 @@ function reflectDebug() {
 }
 
 // --- save / load ---
+// Per-chapter save slots. Each chapter has its own key so saving in
+// Wyndmere doesn't clobber an Ashgrove save (and vice versa).
+function saveKeyFor(storyId) { return SAVE_KEY + ":" + (storyId || "ashgrove"); }
+function listSavedSlots() {
+  const out = [];
+  for (const ch of ["ashgrove", "wyndmere"]) {
+    const raw = localStorage.getItem(saveKeyFor(ch));
+    if (!raw) continue;
+    try {
+      const d = JSON.parse(raw);
+      out.push({ chapter: ch, savedAt: d._savedAt || 0, raw });
+    } catch (e) {}
+  }
+  return out;
+}
 function serializeState() {
   return JSON.stringify({
+    _story: state._story || "ashgrove",
+    _savedAt: Date.now(),
     truth: state.truth,
     currentRoom: state.currentRoom,
     timeMinutes: state.timeMinutes,
@@ -490,21 +473,60 @@ function serializeState() {
     _m: state._m || {},
     _elizaChoice: state._elizaChoice || null,
     _elizaProtected: !!state._elizaProtected,
-    photos: state.photos || []
+    photos: state.photos || [],
+    composure: state.composure,
+    _composureBroken: !!state._composureBroken,
+    _composureLockedDoc: state._composureLockedDoc || null,
+    _composureLastTick: state._composureLastTick || 0
   });
 }
 function saveGame() {
   if (!state.truth) { alert("No game in progress."); return; }
   try {
-    localStorage.setItem(SAVE_KEY, serializeState());
-    narrate("[Game saved]");
+    const storyId = state._story || "ashgrove";
+    const payload = serializeState();
+    localStorage.setItem(saveKeyFor(storyId), payload);
+    // Keep the legacy single-key save mirrored to the current chapter so
+    // older code paths (and the "Continue" auto-load) still see something.
+    localStorage.setItem(SAVE_KEY, payload);
+    const niceName = storyId === "wyndmere" ? "Wyndmere Hollow" : "Ashgrove";
+    narrate(`[Game saved \u00B7 ${niceName}]`);
   } catch (e) { alert("Save failed: " + e.message); }
 }
 function loadGame() {
-  const raw = localStorage.getItem(SAVE_KEY);
-  if (!raw) { alert("No save found."); return; }
+  const slots = listSavedSlots();
+  let raw = null;
+  if (slots.length === 0) {
+    // Fall back to legacy single-key save.
+    raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) { alert("No save found."); return; }
+  } else if (slots.length === 1) {
+    raw = slots[0].raw;
+  } else {
+    // Multiple slots — let the player pick.
+    slots.sort((a, b) => b.savedAt - a.savedAt);
+    const names = { ashgrove: "Ashgrove", wyndmere: "Wyndmere Hollow" };
+    const lines = slots.map((s, i) => {
+      const when = s.savedAt ? new Date(s.savedAt).toLocaleString() : "unknown time";
+      return `${i + 1}. ${names[s.chapter] || s.chapter} \u2014 ${when}`;
+    }).join("\n");
+    const pick = prompt(`Two saves found. Type 1 or 2:\n\n${lines}`, "1");
+    if (pick == null) return;
+    const idx = Math.max(1, Math.min(slots.length, parseInt(pick, 10) || 1)) - 1;
+    raw = slots[idx].raw;
+  }
   try {
     const d = JSON.parse(raw);
+    // Restore the correct chapter FIRST so ROOMS/ENTITIES/etc are populated
+    // before we hydrate currentRoom and friends. Without this, loading a
+    // Wyndmere save into a default Ashgrove session leaves wm_* room ids
+    // undefined and renderRoom() paints a black screen.
+    const storyId = d._story || "ashgrove";
+    if (storyId !== "ashgrove" && typeof loadStory === "function") {
+      loadStory(storyId);
+    } else {
+      state._story = "ashgrove";
+    }
     state.truth = d.truth;
     state.currentRoom = d.currentRoom;
     state.timeMinutes = d.timeMinutes;
@@ -527,6 +549,14 @@ function loadGame() {
     state._elizaChoice = d._elizaChoice || null;
     state._elizaProtected = !!d._elizaProtected;
     state.photos = d.photos || [];
+    state.composure = (typeof d.composure === "number") ? d.composure : 100;
+    state._composureBroken = !!d._composureBroken;
+    state._composureLockedDoc = d._composureLockedDoc || null;
+    state._composureLastTick = d._composureLastTick || 0;
+    if (typeof renderComposure === "function") renderComposure();
+    document.body.classList.toggle("composure-rattled", state.composure <= 60);
+    document.body.classList.toggle("composure-unravel", state.composure <= 30);
+    document.body.classList.toggle("composure-broken", state._composureBroken === true);
     state.endDialog = null;
     closeOverlay("overlay-settings");
     closeOverlay("overlay-title");
@@ -534,4 +564,9 @@ function loadGame() {
     narrate("[Game loaded]");
   } catch (e) { alert("Load failed: " + e.message); }
 }
-function hasSave() { return !!localStorage.getItem(SAVE_KEY); }
+function hasSave() {
+  if (localStorage.getItem(SAVE_KEY)) return true;
+  if (localStorage.getItem(saveKeyFor("ashgrove"))) return true;
+  if (localStorage.getItem(saveKeyFor("wyndmere"))) return true;
+  return false;
+}

@@ -250,13 +250,29 @@ ROOM_SVG.nursery = `
 <g opacity="0.4" stroke="#1a0818" stroke-width="0.3">
 <line x1="0" y1="150" x2="320" y2="150"/><line x1="0" y1="162" x2="320" y2="162"/>
 </g>
-<ellipse cx="60" cy="140" rx="32" ry="6" fill="#000" opacity="0.5"/>
-<path d="M 45 140 Q 48 118 62 108 L 80 108 Q 82 118 84 140 Z" fill="#3a1a08" stroke="#1a0a04" stroke-width="0.5"/>
-<rect x="58" y="80" width="24" height="30" fill="#3a1a08" stroke="#1a0a04" stroke-width="0.5"/>
-<rect x="60" y="84" width="20" height="22" fill="#2a1006"/>
-<path d="M 44 138 Q 50 150 60 144" stroke="#3a1a08" stroke-width="3" fill="none"/>
-<path d="M 82 138 Q 76 150 86 144" stroke="#3a1a08" stroke-width="3" fill="none"/>
-<path d="M 44 142 Q 60 150 84 142" stroke="#2a1006" stroke-width="1" fill="none" opacity="0.7"/>
+<ellipse cx="64" cy="142" rx="30" ry="5" fill="#000" opacity="0.55"/>
+<!-- nursery rocking chair: tall slatted back, seat, legs, curved rockers -->
+<g stroke="#1a0a04" stroke-width="0.5">
+<!-- curved back frame -->
+<path d="M 50 132 Q 46 100 54 78 Q 64 72 74 78 Q 82 100 78 132 Z" fill="#3a1a08"/>
+<!-- vertical back slats -->
+<g stroke="#1a0a04" stroke-width="0.6" fill="none">
+<path d="M 56 130 Q 53 104 58 82"/>
+<path d="M 64 130 Q 64 102 64 80"/>
+<path d="M 72 130 Q 75 104 70 82"/>
+</g>
+<!-- top crest -->
+<path d="M 50 80 Q 64 70 78 80 Q 64 84 50 80 Z" fill="#2a1006"/>
+<!-- seat -->
+<path d="M 44 130 L 84 130 L 80 138 L 48 138 Z" fill="#2a1006"/>
+<!-- front + back legs -->
+<rect x="48" y="136" width="3" height="10" fill="#2a1006"/>
+<rect x="77" y="136" width="3" height="10" fill="#2a1006"/>
+</g>
+<!-- curved rockers -->
+<path d="M 40 148 Q 64 152 88 148" stroke="#3a1a08" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+<path d="M 40 148 Q 38 144 44 142" stroke="#3a1a08" stroke-width="2" fill="none" stroke-linecap="round"/>
+<path d="M 88 148 Q 90 144 84 142" stroke="#3a1a08" stroke-width="2" fill="none" stroke-linecap="round"/>
 <ellipse cx="130" cy="140" rx="14" ry="4" fill="#000" opacity="0.5"/>
 <circle cx="130" cy="130" r="10" fill="#6a2830"/>
 <circle cx="130" cy="130" r="10" fill="none" stroke="#4a1a20" stroke-width="0.5"/>

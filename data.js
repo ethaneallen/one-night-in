@@ -28,8 +28,7 @@ const ROOMS = {
       { id: "parlor-door", label: "To the parlor", action: "travel", target: "parlor" },
       { id: "library-door", label: "To the library", action: "travel", target: "library" },
       { id: "dining-door", label: "To the dining room", action: "travel", target: "dining" },
-      { id: "cellar-door", label: "Cellar stairs (down)", action: "travel", target: "wine_cellar" },
-      { id: "speak-to-house", label: "Speak to the house", action: "speak_house" }
+      { id: "cellar-door", label: "Cellar stairs (down)", action: "travel", target: "wine_cellar" }
     ],
     emf: 0,
     entities: []
@@ -46,6 +45,7 @@ const ROOMS = {
       { id: "seance-sit", label: "Sit at the séance table", action: "seance" },
       { id: "seance-bell", label: "Ring Margaret's silver bell", action: "seance_bell" },
       { id: "parlor-drawer", label: "A locked drawer beneath the table", action: "combo", target: "parlor_drawer" },
+      { id: "parlor-to-library", label: "Through to the library", action: "travel", target: "library" },
       { id: "back-hall", label: "Back to the hall", action: "travel", target: "entry_hall" }
     ],
     emf: 1,
@@ -62,6 +62,8 @@ const ROOMS = {
       { id: "trust-docs", label: "Trust documents", action: "document", target: "trust" },
       { id: "margaret-diary", label: "Margaret's séance diary", action: "document", target: "margaret_diary" },
       { id: "knock-wall", label: "Knock on the wall", action: "knock", target: "library_wall" },
+      { id: "library-to-parlor", label: "Through to the parlor", action: "travel", target: "parlor" },
+      { id: "library-to-dining", label: "Through to the dining room", action: "travel", target: "dining" },
       { id: "back-hall", label: "Back to the hall", action: "travel", target: "entry_hall" }
     ],
     emf: 2,
@@ -92,6 +94,7 @@ const ROOMS = {
       { id: "pipes", label: "Copper pipes", action: "examine", target: "pipes" },
       { id: "wiring", label: "Old wiring", action: "examine", target: "wiring" },
       { id: "old-clipping", label: "A yellowed clipping pinned to the pantry shelf", action: "document", target: "fire_clipping" },
+      { id: "kitchen-to-conservatory", label: "Through to the conservatory", action: "travel", target: "conservatory" },
       { id: "back-dining", label: "Back to the dining room", action: "travel", target: "dining" }
     ],
     emf: 3,
@@ -106,6 +109,7 @@ const ROOMS = {
     hotspots: [
       { id: "vines", label: "The dead vines", action: "examine", target: "vines" },
       { id: "cracked-pane", label: "Cracked glass pane", action: "examine", target: "crack" },
+      { id: "conservatory-to-kitchen", label: "Through to the kitchen", action: "travel", target: "kitchen" },
       { id: "back-dining", label: "Back to the dining room", action: "travel", target: "dining" }
     ],
     emf: 0,
@@ -137,6 +141,7 @@ const ROOMS = {
     hotspots: [
       { id: "bed", label: "The bed", action: "examine", target: "master_bed" },
       { id: "east-wall", label: "The east wall", action: "examine", target: "east_wall" },
+      { id: "master-to-study", label: "Through to Adeline's study", action: "travel", target: "study" },
       { id: "back-hall2", label: "Back to the upstairs hall", action: "travel", target: "upstairs_hall" }
     ],
     emf: 0,
@@ -152,6 +157,7 @@ const ROOMS = {
       { id: "rocking-chair", label: "Rocking chair", action: "examine", target: "rocking_chair" },
       { id: "thimble", label: "Silver thimble", action: "examine", target: "thimble" },
       { id: "east-wall-nursery", label: "The east wall", action: "examine", target: "east_wall_nursery" },
+      { id: "nursery-to-governess", label: "Through to the governess's room", action: "travel", target: "governess" },
       { id: "back-hall2", label: "Back to the upstairs hall", action: "travel", target: "upstairs_hall" }
     ],
     emf: 2,
@@ -165,6 +171,7 @@ const ROOMS = {
     short: "The governess's room. Adjoins the nursery. A child's drawing of two twins — with a third hand between them.",
     hotspots: [
       { id: "drawing", label: "The child's drawing", action: "examine", target: "drawing" },
+      { id: "governess-to-nursery", label: "Adjoining door to the nursery", action: "travel", target: "nursery" },
       { id: "back-hall2", label: "Back to the upstairs hall", action: "travel", target: "upstairs_hall" }
     ],
     emf: 1,
@@ -180,6 +187,7 @@ const ROOMS = {
       { id: "tape-machine", label: "Reel-to-reel tape machine", action: "tape" },
       { id: "tape-box", label: "Box of tapes", action: "examine", target: "tape_box" },
       { id: "letter-1972", label: "A sealed letter (1972)", action: "document", target: "sealed_letter" },
+      { id: "study-to-master", label: "Through to the master bedroom", action: "travel", target: "master" },
       { id: "back-hall2", label: "Back to the upstairs hall", action: "travel", target: "upstairs_hall" }
     ],
     emf: 2,
@@ -195,7 +203,6 @@ const ROOMS = {
       { id: "locked-door", label: "The locked door", action: "locked_door" },
       { id: "racks", label: "Wine racks", action: "examine", target: "racks" },
       { id: "knock-cellar-door", label: "Knock on the locked door", action: "knock", target: "cellar_door" },
-      { id: "speak-to-house-cellar", label: "Speak to the house", action: "speak_house" },
       { id: "back-hall-up", label: "Back up to the entry hall", action: "travel", target: "entry_hall" }
     ],
     emf: 1,

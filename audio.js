@@ -50,7 +50,14 @@ const audio = (function() {
     const freq = {
       drive: 55, entry_hall: 45, parlor: 50, library: 40, dining: 48, kitchen: 60,
       conservatory: 52, upstairs_hall: 42, master: 38, nursery: 33, governess: 44,
-      study: 41, wine_cellar: 28
+      study: 41, wine_cellar: 28,
+      // Wyndmere Hollow (Chapter II) — each room gets its own fundamental so
+      // the legacy drone changes when you travel, not just the per-room bed.
+      wm_jetty: 49,        wm_drive: 53,        wm_foyer: 46,
+      wm_morning: 51,      wm_library: 39,      wm_kitchen: 58,
+      wm_upper_hall: 43,   wm_master: 36,       wm_viv_room: 34,
+      wm_attic_door: 41,   wm_attic: 30,        wm_chapel: 47,
+      wm_boathouse: 32,    wm_lakeshore: 50
     }[roomId] || 45;
 
     const osc1 = ctx.createOscillator();
@@ -633,13 +640,13 @@ const audio = (function() {
     lp.type = "lowpass"; lp.frequency.value = 3200;
     const g = ctx.createGain();
     g.gain.setValueAtTime(0, ctx.currentTime);
-    g.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.15);
+    g.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 0.15);
     // Slow amplitude wobble to feel like radio drifting
     const lfo = ctx.createOscillator();
     const lfoGain = ctx.createGain();
     lfo.type = "sine";
     lfo.frequency.value = 0.4;
-    lfoGain.gain.value = 0.04;
+    lfoGain.gain.value = 0.018;
     lfo.connect(lfoGain); lfoGain.connect(g.gain);
     src.connect(hp); hp.connect(lp); lp.connect(g); g.connect(masterGain);
     src.start(); lfo.start();
@@ -713,9 +720,15 @@ const audio = (function() {
 
   // Each bed is a function that creates oscillators attached to ambientGain.
   // Kept very quiet (gain * 0.04 to 0.07) so it's felt, not heard.
+  // Beds expose `bedSubGain` for duckBed() and `nodes` for warpBed().
   function buildBed(kind) {
     const now = ctx.currentTime;
     const nodes = [];
+    // One shared sub-gain for the whole bed — reactive audio modulates this
+    // (duckBed) instead of individual osc gains, so volume rides cleanly.
+    const bedSubGain = ctx.createGain();
+    bedSubGain.gain.setValueAtTime(1, now);
+    bedSubGain.connect(ambientGain);
     function osc(type, freq, detune, gainVal, filterFreq) {
       const o = ctx.createOscillator();
       o.type = type;
@@ -731,7 +744,7 @@ const audio = (function() {
       } else {
         o.connect(g);
       }
-      g.connect(ambientGain);
+      g.connect(bedSubGain);
       o.start();
       nodes.push({ o, g });
     }
@@ -797,6 +810,91 @@ const audio = (function() {
         osc("sine", 110, 0, 0.05, 500);
         osc("sine", 139, 4, 0.035, 500);
         break;
+
+      // ── Wyndmere Hollow (Chapter II) ───────────────────────────────
+      case "wm_jetty":
+        // Lapping lake — low water sub + distant horn
+        osc("sine", 49, 0, 0.07, 220);
+        osc("triangle", 73, -6, 0.03, 320);
+        osc("sine", 196, 4, 0.018, 900);
+        break;
+      case "wm_drive":
+        // Wet gravel approach — soft outdoor moan, slightly brighter
+        osc("sine", 62, 0, 0.055, 300);
+        osc("triangle", 92.5, -4, 0.028, 420);
+        break;
+      case "wm_foyer":
+        // Grand, hollow entry — open fifth, chandelier shimmer
+        osc("sine", 73.4, 0, 0.06, 320);
+        osc("sine", 110, 3, 0.04, 360);
+        osc("triangle", 440, 0, 0.012, 1800);
+        break;
+      case "wm_morning":
+        // Cold east-facing room — thin glassy upper drone
+        osc("sine", 87, 0, 0.045, 380);
+        osc("triangle", 196, 5, 0.022, 1100);
+        osc("sine", 261, -3, 0.014, 1400);
+        break;
+      case "wm_library":
+        // Wing-back hush — wood-paneled mid drone with paper rustle bias
+        osc("sawtooth", 69.3, 0, 0.04, 420);
+        osc("sawtooth", 69.3, 9, 0.03, 420);
+        osc("sine", 138.6, -4, 0.025, 600);
+        break;
+      case "wm_kitchen":
+        // Damp scullery — ticking pipes, water under floor
+        osc("sawtooth", 55, 0, 0.05, 200);
+        osc("square", 110, 6, 0.016, 240);
+        osc("sine", 41, 0, 0.04, 180);
+        break;
+      case "wm_upper_hall":
+        // Long corridor wind — wider stereo-feeling beats
+        osc("sine", 92.5, 0, 0.05, 460);
+        osc("triangle", 138.6, -7, 0.03, 560);
+        osc("sine", 92.5, 5, 0.025, 460);
+        break;
+      case "wm_master":
+        // Mrs. Thrale's bed — slow heavy breath under it all
+        osc("sine", 46, 0, 0.085, 220);
+        osc("triangle", 98, -8, 0.03, 340);
+        osc("sine", 146, -2, 0.018, 500);
+        break;
+      case "wm_viv_room":
+        // Vivian's room — wet, cold music-box ghost
+        osc("triangle", 494, 0, 0.022, 1700);
+        osc("triangle", 622, 7, 0.018, 1700);
+        osc("sine", 110, 0, 0.05, 280);
+        break;
+      case "wm_attic_door":
+        // Held breath — single low tone, very narrow
+        osc("sine", 58, 0, 0.075, 220);
+        osc("sine", 58, 6, 0.04, 220);
+        break;
+      case "wm_attic":
+        // Up under the eaves — high airy hiss + a low warning
+        osc("sine", 55, 0, 0.06, 250);
+        osc("triangle", 165, 3, 0.025, 900);
+        osc("sine", 330, -5, 0.012, 1400);
+        break;
+      case "wm_chapel":
+        // Stone chapel — open fifth pipe-organ feel
+        osc("sine", 65.4, 0, 0.07, 280);
+        osc("sine", 98, 4, 0.05, 320);
+        osc("triangle", 196, -3, 0.03, 700);
+        break;
+      case "wm_boathouse":
+        // Hollow timber over black water — sub + creak
+        osc("sine", 41, 0, 0.08, 200);
+        osc("triangle", 82, -6, 0.03, 320);
+        osc("sine", 123, 9, 0.018, 500);
+        break;
+      case "wm_lakeshore":
+        // Outside, at the water's edge — wide low moan + mist shimmer
+        osc("sine", 52, 0, 0.07, 240);
+        osc("triangle", 78, -5, 0.03, 360);
+        osc("sine", 220, 6, 0.014, 1600);
+        break;
+
       case "drive":
       default:
         // Outdoor — low moan of night air
@@ -805,6 +903,8 @@ const audio = (function() {
         break;
     }
     return {
+      bedSubGain,
+      nodes,
       stop() {
         try {
           const t = ctx.currentTime;
@@ -831,7 +931,332 @@ const audio = (function() {
     currentBedRoom = null;
   }
 
-  return { start, ensureCtx, updateVolumes, playAmbient, stopAmbient, sfx, startSpiritStatic, stopSpiritStatic, startRainBed, stopRainBed, setRainIndoors, playRoomBed, stopRoomBed };
+  // --- Reactive audio (called by gameplay on scares, manifestations, etc.) ---
+
+  // duckBed: temporarily reduce the room bed's volume by `amount` (0..1) for `ms`.
+  // Returns smoothly. Safe to call when no bed is playing.
+  function duckBed(amount, ms) {
+    ensureCtx(); if (!ctx || !musicBedNode || !musicBedNode.bedSubGain) return;
+    const g = musicBedNode.bedSubGain.gain;
+    const t = ctx.currentTime;
+    const dipTo = Math.max(0.05, 1 - (amount || 0.7));
+    try {
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(g.value, t);
+      g.linearRampToValueAtTime(dipTo, t + 0.15);
+      g.linearRampToValueAtTime(1, t + Math.max(0.5, (ms || 1500) / 1000));
+    } catch (e) {}
+  }
+
+  // warpBed: pitch the bed downward by `cents` for `ms`, then restore.
+  // Used on manifestations and scares — the room itself sags downward.
+  function warpBed(cents, ms) {
+    ensureCtx(); if (!ctx || !musicBedNode || !musicBedNode.nodes) return;
+    const dur = Math.max(300, ms || 2200);
+    const t = ctx.currentTime;
+    musicBedNode.nodes.forEach(({ o }) => {
+      try {
+        const base = o.detune.value || 0;
+        o.detune.cancelScheduledValues(t);
+        o.detune.setValueAtTime(base, t);
+        o.detune.linearRampToValueAtTime(base - Math.abs(cents || 80), t + 0.4);
+        o.detune.linearRampToValueAtTime(base, t + dur / 1000);
+      } catch (e) {}
+    });
+  }
+
+  // --- Heartbeat layer: subtle sub-pulse, started/stopped externally ---
+  let heartbeatNode = null;
+  function startHeartbeat() {
+    ensureCtx(); if (!ctx) return;
+    if (heartbeatNode) return;
+    const now = ctx.currentTime;
+    const o = ctx.createOscillator();
+    o.type = "sine"; o.frequency.value = 55;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, now);
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.value = 180;
+    o.connect(lp); lp.connect(g); g.connect(ambientGain);
+    o.start();
+    // 60 bpm pulse pattern (1 sec): two short bumps (lub-dub), then quiet
+    let stopped = false;
+    function pulse() {
+      if (stopped || !ctx) return;
+      const t = ctx.currentTime;
+      try {
+        g.gain.cancelScheduledValues(t);
+        g.gain.setValueAtTime(0.0, t);
+        g.gain.linearRampToValueAtTime(0.10, t + 0.06);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+        g.gain.setValueAtTime(0.0, t + 0.28);
+        g.gain.linearRampToValueAtTime(0.07, t + 0.34);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+      } catch (e) {}
+      setTimeout(pulse, 1100 + Math.random() * 200);
+    }
+    pulse();
+    heartbeatNode = {
+      stop() {
+        stopped = true;
+        try {
+          const t = ctx.currentTime;
+          g.gain.cancelScheduledValues(t);
+          g.gain.linearRampToValueAtTime(0, t + 0.4);
+          o.stop(t + 0.5);
+        } catch (e) {}
+      }
+    };
+  }
+  function stopHeartbeat() {
+    if (heartbeatNode) { heartbeatNode.stop(); heartbeatNode = null; }
+  }
+
+  // --- One-shot: whisper a name (used once per night, EVP-style) ---
+  // Synthesized: filtered pink noise with formant peaks + envelope per syllable.
+  function whisperName(name) {
+    ensureCtx(); if (!ctx || !name) return;
+    const cleaned = String(name).trim().toLowerCase().replace(/[^a-z\s'-]/g, "");
+    const syllables = cleaned.split(/[\s\-']/).filter(Boolean);
+    if (!syllables.length) return;
+    const t0 = ctx.currentTime + 0.05;
+    syllables.forEach((syl, idx) => {
+      const start = t0 + idx * 0.42;
+      const dur = 0.32 + Math.min(0.25, syl.length * 0.04);
+      // Pink-ish noise via filtered white
+      const bufferSize = Math.floor(ctx.sampleRate * (dur + 0.1));
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.5;
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      // Formants — vowel-ish band-pass
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      // Vary formant by first vowel of syllable
+      const vowel = (syl.match(/[aeiouy]/) || ["a"])[0];
+      const fMap = { a: 700, e: 500, i: 350, o: 450, u: 400, y: 380 };
+      bp.frequency.value = fMap[vowel] || 500;
+      bp.Q.value = 6;
+      const hp = ctx.createBiquadFilter();
+      hp.type = "highpass"; hp.frequency.value = 180;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, start);
+      g.gain.linearRampToValueAtTime(0.14, start + 0.05);
+      g.gain.linearRampToValueAtTime(0.18, start + dur * 0.55);
+      g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+      src.connect(bp); bp.connect(hp); hp.connect(g); g.connect(masterGain);
+      src.start(start);
+      src.stop(start + dur + 0.05);
+    });
+    // Underlying sub pitched at the name's stress (simple constant)
+    const sub = ctx.createOscillator();
+    sub.type = "sine"; sub.frequency.value = 75;
+    const subG = ctx.createGain();
+    subG.gain.setValueAtTime(0, t0);
+    subG.gain.linearRampToValueAtTime(0.04, t0 + 0.2);
+    subG.gain.exponentialRampToValueAtTime(0.0001, t0 + syllables.length * 0.42 + 0.3);
+    sub.connect(subG); subG.connect(masterGain);
+    sub.start(t0); sub.stop(t0 + syllables.length * 0.42 + 0.4);
+    // Duck the bed under the whisper so it's audible
+    duckBed(0.5, syllables.length * 420 + 600);
+  }
+
+  // --- Panned knock: same synthesis as knock sfx but with a stereo position ---
+  function pannedKnock(pan) {
+    ensureCtx(); if (!ctx) return;
+    const t = ctx.currentTime;
+    const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if (p) p.pan.value = Math.max(-1, Math.min(1, pan || 0));
+    function bump(offset) {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "square"; o.frequency.value = 90;
+      g.gain.setValueAtTime(0, t + offset);
+      g.gain.linearRampToValueAtTime(0.30, t + offset + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + offset + 0.10);
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass"; lp.frequency.value = 320;
+      o.connect(lp); lp.connect(g);
+      if (p) { g.connect(p); p.connect(masterGain); } else { g.connect(masterGain); }
+      o.start(t + offset); o.stop(t + offset + 0.12);
+    }
+    bump(0); bump(0.22); bump(0.44);
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // CREEP MUSIC LAYER — Fat-Man-inspired detuned-piano plinks
+  // Sparse, sour cluster notes that drift over the ambient bed.
+  // Tempo and dissonance scale with state.aggression.
+  // ────────────────────────────────────────────────────────────────────
+  let creepNode = null;
+  function startCreepLayer() {
+    ensureCtx(); if (!ctx) return;
+    if (creepNode) return;
+    let stopped = false;
+    // Output bus: lowpass + plate-ish feedback delay for cathedral feel
+    const bus = ctx.createGain();
+    bus.gain.value = 0.55;
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass"; lp.frequency.value = 1700; lp.Q.value = 0.5;
+    const delay = ctx.createDelay(2);
+    delay.delayTime.value = 0.42;
+    const feedback = ctx.createGain();
+    feedback.gain.value = 0.38;
+    const wet = ctx.createGain();
+    wet.gain.value = 0.55;
+    bus.connect(lp);
+    lp.connect(ambientGain);
+    lp.connect(delay);
+    delay.connect(feedback);
+    feedback.connect(delay);
+    delay.connect(wet);
+    wet.connect(ambientGain);
+
+    // Half-diminished cluster — equal-weight wrongness
+    // D, F, Ab, B (in Hz, low octave): 73.4, 87.3, 103.8, 123.5
+    const clusters = [
+      [73.4, 87.3, 103.8, 123.5],      // D F Ab B
+      [98, 116.5, 138.6, 164.8],       // G Bb Db E
+      [110, 130.8, 155.6, 185],        // A C Eb F#
+      [82.4, 98, 116.5, 138.6]         // E G Bb Db
+    ];
+    let cluster = clusters[Math.floor(Math.random() * clusters.length)];
+    function rotateCluster() {
+      cluster = clusters[Math.floor(Math.random() * clusters.length)];
+    }
+    setInterval(rotateCluster, 45000 + Math.random() * 20000);
+
+    function plink() {
+      if (stopped) return;
+      try {
+        const agg = (typeof state !== "undefined" && state.aggression) || 0;
+        // Octave: low when calm, climbs as aggression rises
+        const octShift = agg > 70 ? 4 : agg > 40 ? 3 : agg > 15 ? 2 : 1;
+        const base = cluster[Math.floor(Math.random() * cluster.length)];
+        const freq = base * Math.pow(2, octShift);
+        const now = ctx.currentTime;
+        const dur = 2.4 + Math.random() * 1.4;
+        // Two detuned sines for a "prepared piano" timbre
+        const o1 = ctx.createOscillator();
+        const o2 = ctx.createOscillator();
+        const o3 = ctx.createOscillator(); // AM modulator
+        const g  = ctx.createGain();
+        const amG = ctx.createGain();
+        o1.type = "sine"; o1.frequency.value = freq;
+        o2.type = "sine"; o2.frequency.value = freq; o2.detune.value = -7;
+        o3.type = "sine"; o3.frequency.value = 4.2; // tremolo
+        amG.gain.value = 0.18;
+        // Mild brighter overtone — gives the celeste edge
+        const o4 = ctx.createOscillator();
+        const g4 = ctx.createGain();
+        o4.type = "triangle"; o4.frequency.value = freq * 2;
+        g4.gain.setValueAtTime(0, now);
+        g4.gain.linearRampToValueAtTime(0.025, now + 0.008);
+        g4.gain.exponentialRampToValueAtTime(0.0001, now + dur * 0.6);
+        o4.connect(g4); g4.connect(bus); o4.start(now); o4.stop(now + dur);
+
+        g.gain.setValueAtTime(0, now);
+        g.gain.linearRampToValueAtTime(0.085, now + 0.008);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+        o3.connect(amG); amG.connect(g.gain);
+        o1.connect(g); o2.connect(g); g.connect(bus);
+        o1.start(now); o2.start(now); o3.start(now);
+        o1.stop(now + dur + 0.05); o2.stop(now + dur + 0.05); o3.stop(now + dur + 0.05);
+      } catch (e) {}
+      // Tempo: 8-16s when calm, 3-7s when angry
+      const agg = (typeof state !== "undefined" && state.aggression) || 0;
+      const lo = Math.max(2500, 9000 - agg * 70);
+      const hi = Math.max(5500, 16000 - agg * 110);
+      const next = lo + Math.random() * (hi - lo);
+      setTimeout(plink, next);
+    }
+    // Stagger first hit so it's not synchronized with room change
+    setTimeout(plink, 2500 + Math.random() * 4000);
+
+    creepNode = {
+      stop() {
+        stopped = true;
+        try {
+          const t = ctx.currentTime;
+          bus.gain.cancelScheduledValues(t);
+          bus.gain.linearRampToValueAtTime(0, t + 1.5);
+        } catch (e) {}
+      }
+    };
+  }
+  function stopCreepLayer() {
+    if (creepNode) { creepNode.stop(); creepNode = null; }
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // DEAD-AIR GATE — drop ambient to silence briefly, then restore.
+  // Use right before a scare; the silence is the scare.
+  // ────────────────────────────────────────────────────────────────────
+  let preGateGain = null;
+  function deadAirGate(ms) {
+    ensureCtx(); if (!ctx || !ambientGain) return;
+    const dur = (ms || 600) / 1000;
+    const t = ctx.currentTime;
+    try {
+      if (preGateGain == null) preGateGain = ambientGain.gain.value;
+      ambientGain.gain.cancelScheduledValues(t);
+      ambientGain.gain.setTargetAtTime(0, t, 0.05);
+      // Restore
+      setTimeout(() => {
+        try {
+          updateVolumes(); // resets ambientGain to settings.volAmbient
+          preGateGain = null;
+        } catch (e) {}
+      }, Math.max(200, ms || 600));
+    } catch (e) {}
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // GRANULAR WHISPER BED — bandpassed sibilants you can't quite parse.
+  // Cheap continuous unease; runs while creep layer is active.
+  // ────────────────────────────────────────────────────────────────────
+  let granularNode = null;
+  function startGranularBed() {
+    ensureCtx(); if (!ctx) return;
+    if (granularNode) return;
+    let stopped = false;
+    function grain() {
+      if (stopped) return;
+      try {
+        const dur = 0.06 + Math.random() * 0.08;
+        const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          const env = Math.sin((i / data.length) * Math.PI);
+          data[i] = (Math.random() * 2 - 1) * env;
+        }
+        const src = ctx.createBufferSource(); src.buffer = buf;
+        const bp = ctx.createBiquadFilter();
+        bp.type = "bandpass"; bp.frequency.value = 1100 + Math.random() * 1400; bp.Q.value = 8;
+        const g = ctx.createGain();
+        g.gain.value = 0.022;
+        // Random pan L/R
+        let dest = ambientGain;
+        if (ctx.createStereoPanner) {
+          const p = ctx.createStereoPanner();
+          p.pan.value = (Math.random() * 2 - 1) * 0.85;
+          p.connect(ambientGain);
+          dest = p;
+        }
+        src.connect(bp); bp.connect(g); g.connect(dest);
+        src.start();
+      } catch (e) {}
+      setTimeout(grain, 500 + Math.random() * 1400);
+    }
+    setTimeout(grain, 1200 + Math.random() * 1800);
+    granularNode = { stop() { stopped = true; } };
+  }
+  function stopGranularBed() {
+    if (granularNode) { granularNode.stop(); granularNode = null; }
+  }
+
+  return { start, ensureCtx, updateVolumes, playAmbient, stopAmbient, sfx, startSpiritStatic, stopSpiritStatic, startRainBed, stopRainBed, setRainIndoors, playRoomBed, stopRoomBed, duckBed, warpBed, startHeartbeat, stopHeartbeat, whisperName, pannedKnock, startCreepLayer, stopCreepLayer, deadAirGate, startGranularBed, stopGranularBed };
 })();
 
 // start audio on first user interaction

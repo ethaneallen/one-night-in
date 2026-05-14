@@ -1,7 +1,7 @@
 // menu.js — main menu + pause menu wiring
 "use strict";
 
-const GAME_VERSION = "v0.5.0";
+const GAME_VERSION = "v0.6.0";
 
 function initMenus() {
   const $ = id => document.getElementById(id);
@@ -22,6 +22,8 @@ function initMenus() {
   });
   $("mm-new").addEventListener("click", () => {
     closeOverlay("overlay-mainmenu");
+    // Update the prologue overlay to reflect the chosen chapter.
+    applySelectedStoryToPrologue();
     // Returning players who ticked the skip checkbox go straight to Begin
     if (typeof settings !== "undefined" && settings.skipWarning) {
       // Synthesize a Begin-click: programmatically click the hidden title button
@@ -123,6 +125,19 @@ function initMenus() {
     statsSlot.innerHTML = renderStatsBlock();
   }
 
+  // === Chapter picker — clicking a card selects that story for the next run. ===
+  window._selectedStory = window._selectedStory || "ashgrove";
+  const picker = $("mm-chapter-picker");
+  if (picker) {
+    picker.addEventListener("click", e => {
+      const card = e.target.closest(".mm-chapter-card");
+      if (!card) return;
+      picker.querySelectorAll(".mm-chapter-card").forEach(c => c.classList.remove("is-selected"));
+      card.classList.add("is-selected");
+      window._selectedStory = card.getAttribute("data-story") || "ashgrove";
+    });
+  }
+
   // Delete saved investigation link
   const mmDel = $("mm-delete-save");
   function refreshDeleteState() {
@@ -179,4 +194,30 @@ function initMenus() {
     if (!confirm("Return to the main menu? Unsaved progress will be lost.")) return;
     location.reload();
   });
+}
+
+// === Reflect the picked chapter (window._selectedStory) into the prologue overlay. ===
+function applySelectedStoryToPrologue() {
+  const id = window._selectedStory || "ashgrove";
+  const st = (typeof STORIES !== "undefined" && STORIES[id]) || null;
+  if (!st) return;
+  const order = (typeof listStories === "function") ? listStories().map(s => s.id) : ["ashgrove"];
+  const idx = order.indexOf(id);
+  const roman = ["I","II","III","IV","V","VI"][idx >= 0 ? idx : 0] || "I";
+  const titleEl   = document.querySelector("#overlay-title .mm-story-name");
+  const chapterEl = document.querySelector("#overlay-title .mm-story-chapter");
+  const bylineEl  = document.querySelector("#overlay-title .title-byline");
+  if (titleEl)   titleEl.textContent = st.title || "";
+  if (chapterEl) chapterEl.textContent = `— Chapter ${roman} —`;
+  if (bylineEl && st.byline) bylineEl.innerHTML = `— ${st.byline} —`;
+  // Rewrite warning paragraph house-name mentions.
+  const warnFirst = document.querySelector("#overlay-title .title-warning .warn-body");
+  if (warnFirst) {
+    const house = st.title || "the house";
+    warnFirst.innerHTML =
+      `The management of <em>${house}</em> wishes to inform the prospective investigator ` +
+      `that the events portrayed in this entertainment are <em>inspired by true accounts</em> ` +
+      `kept by the ${house.split(" ")[0]} Preservation Society, and that the phenomena described herein ` +
+      `have been reported by <em>persons of good standing</em> who spent the night within these walls.`;
+  }
 }

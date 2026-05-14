@@ -1,14 +1,20 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --serif-body: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  /* Body type is now EB Garamond — a proper book weight with thicker
+   * strokes that survive on a dark background. Cormorant is reserved for
+   * italic accents and display flourishes where its hairlines work. */
+  --serif-body: "EB Garamond", "Lora", Georgia, "Times New Roman", serif;
   --serif-display: "Cinzel", Georgia, serif;
-  --serif-accent: "IM Fell English", "Cormorant Garamond", Georgia, serif;
-  --ink: #e8d8c0;
-  --ink-muted: #b09888;
-  --ink-dim: #7a6858;
+  --serif-accent: "Cormorant Garamond", "IM Fell English", Georgia, serif;
+  --serif-fell: "IM Fell English", "Cormorant Garamond", Georgia, serif;
+  /* Brighter, warmer ink for legibility. The old #e8d8c0 was too dim once
+   * paired with a hairline serif on near-black. */
+  --ink: #f0e4cf;
+  --ink-muted: #c4ad94;
+  --ink-dim: #8a7864;
   --ink-faint: #5a4850;
-  --accent-warm: #d4a878;
+  --accent-warm: #e6b888;
   --accent-deep: #8a6040;
   --paper: #1a1414;
   --paper-edge: #2a2022;
@@ -20,9 +26,12 @@ html, body {
   background: #0a0808;
   color: var(--ink);
   font-family: var(--serif-body);
-  font-size: 17px;
-  line-height: 1.55;
+  font-size: 18px;
+  line-height: 1.7;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 #game {
@@ -48,8 +57,8 @@ html, body {
   border-bottom: 1px solid #2a2022;
   box-shadow: 0 2px 4px rgba(0,0,0,0.5);
   font-family: var(--serif-display);
-  font-size: 13px;
-  letter-spacing: 3px;
+  font-size: 12px;
+  letter-spacing: 2px;
   gap: 12px;
   text-transform: uppercase;
 }
@@ -92,7 +101,13 @@ html, body {
 #scene-art {
   width: 100%;
   max-width: 760px;
-  height: 300px;
+  /* 16:9 to match the room SVG viewBox (320x180). Using aspect-ratio
+   * instead of a fixed height keeps the painted scene from being cropped
+   * top-and-bottom on narrower viewports. max-height caps it on tall
+   * desktops; min-height stops it collapsing into a sliver on tiny phones. */
+  aspect-ratio: 16 / 9;
+  max-height: 340px;
+  min-height: 180px;
   background: linear-gradient(180deg, #241c20 0%, #100c0e 100%);
   border: 1px solid #3a2c26;
   outline: 1px solid #1a0e0c;
@@ -104,19 +119,52 @@ html, body {
   color: #3a3032;
   font-size: 14px;
   letter-spacing: 2px;
+  overflow: hidden;
   box-shadow:
     0 8px 24px rgba(0,0,0,0.6),
-    inset 0 0 60px rgba(0,0,0,0.6),
+    inset 0 0 80px rgba(0,0,0,0.7),
     inset 0 1px 0 rgba(255,220,180,0.04);
 }
-#scene-art::after {
-  /* inner vignette for cinematic depth */
+/* --- Cinematic polish layers ---
+ * ::before  : film grain (subtle, fixed) + warm candle-bleed bottom + cool moon-bleed top
+ * ::after   : strong edge vignette + faint horizontal letterboxing
+ * Together these give every room in both chapters an oil-painting / 1960s
+ * Eastman-color cinematography feel without touching the per-room SVGs. */
+#scene-art::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%);
   pointer-events: none;
+  z-index: 2;
+  background:
+    /* film grain — tight SVG noise data-URI, ~7% opacity */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='5' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.72  0 0 0 0 0.58  0 0 0 0 0.42  0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/></svg>"),
+    /* warm candle-bleed from the lower interior */
+    radial-gradient(ellipse 70% 55% at 50% 105%, rgba(220, 140, 70, 0.18) 0%, rgba(120, 60, 30, 0.10) 30%, transparent 65%),
+    /* cool moon-bleed from upper edge */
+    radial-gradient(ellipse 80% 40% at 50% -10%, rgba(120, 150, 180, 0.10) 0%, transparent 65%);
+  mix-blend-mode: screen;
+  opacity: 0.85;
 }
+#scene-art::after {
+  /* inner vignette for cinematic depth + faint horizontal letterbox bands */
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background:
+    /* edge vignette */
+    radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.55) 95%, rgba(0,0,0,0.78) 100%),
+    /* top soft letterbox */
+    linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0) 14%),
+    /* bottom soft letterbox */
+    linear-gradient(0deg,   rgba(0,0,0,0.45) 0%, rgba(0,0,0,0) 12%);
+}
+/* Outdoor scenes (drive, jetty, lakeshore) get a cooler grade — handled via
+ * body class set elsewhere — but keep one universal subtle desaturation. */
+#scene-art > svg.room-scene { filter: contrast(1.06) saturate(0.92) brightness(1.02); }
+body.reduce-motion #scene-art::before { opacity: 0.5; }
 /* --- room crossfade --- */
 #scene-art > svg,
 #scene-art > div {
@@ -141,31 +189,37 @@ body.reduce-motion #scene-hotspots { transition: none; }
 #scene-title {
   margin-top: 18px;
   font-family: var(--serif-display);
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 600;
   color: var(--ink);
-  letter-spacing: 6px;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.6), 0 0 20px rgba(212, 168, 120, 0.1);
+  letter-spacing: 4px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.7), 0 0 24px rgba(212, 168, 120, 0.14);
 }
 
 #scene-description {
-  margin-top: 10px;
+  margin-top: 12px;
   max-width: 720px;
   text-align: center;
   font-family: var(--serif-body);
-  font-style: italic;
+  font-style: normal;
   font-weight: 400;
-  color: var(--ink-muted);
-  font-size: 18px;
-  line-height: 1.65;
-  letter-spacing: 0.3px;
+  color: var(--ink);
+  font-size: 19px;
+  line-height: 1.75;
+  letter-spacing: 0.2px;
 }
-#scene-description em { color: var(--accent-warm); font-style: normal; font-weight: 500; }
+#scene-description em {
+  color: var(--accent-warm);
+  font-family: var(--serif-accent);
+  font-style: italic;
+  font-weight: 500;
+}
 #scene-description::first-letter {
   font-family: var(--serif-display);
-  font-size: 1.4em;
+  font-size: 1.5em;
   font-weight: 600;
   color: var(--accent-warm);
+  margin-right: 2px;
 }
 
 #scene-hotspots {
@@ -178,16 +232,17 @@ body.reduce-motion #scene-hotspots { transition: none; }
 }
 
 .hotspot-btn {
-  background: linear-gradient(180deg, #1e1618 0%, #14100e 100%);
-  color: var(--ink-muted);
-  border: 1px solid #3a2c26;
-  padding: 8px 18px;
+  background: linear-gradient(180deg, #221a1c 0%, #14100e 100%);
+  color: var(--ink);
+  border: 1px solid #4a3a30;
+  padding: 9px 20px;
   cursor: pointer;
   font-family: var(--serif-body);
-  font-size: 15px;
-  letter-spacing: 0.5px;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
   transition: all 0.2s ease;
-  box-shadow: inset 0 1px 0 rgba(255,220,180,0.04);
+  box-shadow: inset 0 1px 0 rgba(255,220,180,0.06), 0 1px 2px rgba(0,0,0,0.4);
 }
 .hotspot-btn:hover {
   background: linear-gradient(180deg, #2a1e18 0%, #1c1410 100%);
@@ -205,13 +260,18 @@ body.reduce-motion #scene-hotspots { transition: none; }
   background: linear-gradient(180deg, #0e0a0b 0%, #08060a 100%);
   border-top: 1px solid #2a2022;
   font-family: var(--serif-body);
-  font-size: 16px;
-  line-height: 1.7;
-  color: var(--ink-muted);
-  font-style: italic;
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--ink);
+  font-style: normal;
 }
-#narration p { margin-bottom: 4px; }
-#narration em { color: var(--accent-warm); font-style: normal; }
+#narration p { margin-bottom: 6px; }
+#narration em {
+  color: var(--accent-warm);
+  font-family: var(--serif-accent);
+  font-style: italic;
+  font-weight: 500;
+}
 #narration:empty { padding: 0; min-height: 0; border-top: none; }
 
 #choices {
@@ -222,15 +282,24 @@ body.reduce-motion #scene-hotspots { transition: none; }
   gap: 6px;
 }
 .choice-btn {
-  background: #1a1416;
-  color: #c8b8a0;
+  background: linear-gradient(180deg, #221a1c 0%, #14100e 100%);
+  color: var(--ink);
   border: 1px solid #4a3a38;
-  padding: 6px 12px;
+  padding: 8px 16px;
   cursor: pointer;
-  font-family: inherit;
-  font-size: 13px;
+  font-family: var(--serif-body);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  transition: all 0.18s ease;
+  box-shadow: inset 0 1px 0 rgba(255,220,180,0.05);
 }
-.choice-btn:hover { background: #2a2022; color: #e8d8c0; }
+.choice-btn:hover {
+  background: linear-gradient(180deg, #2e2226 0%, #1c1416 100%);
+  color: var(--accent-warm);
+  border-color: var(--accent-deep);
+  box-shadow: 0 0 10px rgba(138, 96, 64, 0.25), inset 0 1px 0 rgba(255,220,180,0.08);
+}
 
 #inventory {
   grid-area: inventory;
@@ -587,74 +656,122 @@ body.reduce-motion .prologue-panel { animation: none; opacity: 1; }
   border: 1px solid #4a3a30;
   outline: 1px solid #1a1210;
   outline-offset: 4px;
-  padding: 40px 56px;
-  max-width: 540px;
+  padding: 22px 40px 24px;
+  max-width: 760px;
   width: 100%;
   box-shadow: 0 12px 40px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,220,180,0.06);
 }
 .mm-stamp {
   font-family: var(--serif-accent);
-  font-size: 13px;
+  font-size: 12px;
   font-style: italic;
   letter-spacing: 2px;
   color: var(--ink-dim);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 .mm-title {
-  font-size: 52px !important;
-  letter-spacing: 10px !important;
-  margin-bottom: 4px !important;
+  font-size: 40px !important;
+  letter-spacing: 8px !important;
+  margin-bottom: 2px !important;
 }
-/* Subtitle hierarchy: thin rule + big story name + small chapter label.
-   Lets future stories swap only the story block while keeping the umbrella
-   game name ("One Night In…") as the page header. */
+/* Subtitle hierarchy: thin rule + tagline. Chapter cards below pick the story. */
 .mm-series-rule {
   width: 180px;
   height: 1px;
   background: linear-gradient(90deg, transparent 0%, #8a6838 20%, #c8a060 50%, #8a6838 80%, transparent 100%);
-  margin: 10px auto 14px;
+  margin: 6px auto 8px;
   opacity: 0.7;
-}
-.mm-story-name {
-  font-family: var(--serif-display);
-  font-size: 30px;
-  letter-spacing: 8px;
-  font-weight: 600;
-  color: #e8d0a8;
-  text-align: center;
-  margin: 0 0 4px;
-  text-transform: uppercase;
-}
-.mm-story-chapter {
-  font-family: var(--serif-accent);
-  font-style: italic;
-  font-size: 13px;
-  letter-spacing: 4px;
-  color: #8a7565;
-  text-align: center;
-  margin-bottom: 14px;
 }
 .mm-sub {
   font-family: var(--serif-accent);
   font-style: italic;
   color: var(--accent-warm);
   letter-spacing: 3px;
-  font-size: 18px;
-  margin-bottom: 32px;
+  font-size: 15px;
+  margin-bottom: 14px;
 }
-.mm-list { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+
+/* === Chapter picker — two side-by-side selectable cards === */
+.mm-chapter-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0 0 18px;
+}
+.mm-chapter-card {
+  text-align: center;
+  background: linear-gradient(180deg, rgba(36,24,22,0.7) 0%, rgba(20,14,14,0.85) 100%);
+  border: 1px solid #3a2c24;
+  padding: 12px 14px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-family: inherit;
+  outline: none;
+}
+.mm-chapter-card:hover {
+  border-color: var(--accent-warm);
+  box-shadow: 0 0 18px rgba(212,168,120,0.18);
+}
+.mm-chapter-card.is-selected {
+  border-color: var(--accent-warm);
+  background: linear-gradient(180deg, rgba(74,40,32,0.55) 0%, rgba(42,20,16,0.85) 100%);
+  box-shadow: 0 0 22px rgba(212,168,120,0.32), inset 0 1px 0 rgba(255,220,180,0.10);
+}
+.mm-cc-chapter {
+  font-family: var(--serif-accent);
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: #8a7565;
+  margin-bottom: 3px;
+}
+.mm-chapter-card.is-selected .mm-cc-chapter { color: var(--accent-warm); }
+.mm-cc-name {
+  font-family: var(--serif-display);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: 4px;
+  color: #e8d0a8;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.mm-cc-sub {
+  font-family: var(--serif-accent);
+  font-style: italic;
+  font-size: 11px;
+  color: #8a7565;
+  line-height: 1.35;
+}
+
+/* Two-column action button grid keeps the panel short. */
+.mm-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
 .mm-btn {
   font-family: var(--serif-display);
-  font-size: 14px;
-  letter-spacing: 4px;
+  font-size: 13px;
+  letter-spacing: 3px;
   text-transform: uppercase;
-  padding: 14px 22px;
+  padding: 10px 16px;
   background: linear-gradient(180deg, #2a1c18 0%, #140a08 100%);
   color: var(--ink);
   border: 1px solid #4a3228;
   cursor: pointer;
   transition: all 0.25s ease;
   box-shadow: inset 0 1px 0 rgba(255,220,180,0.06);
+}
+.mm-btn-primary {
+  grid-column: 1 / -1;
+  background: linear-gradient(180deg, #4a2820 0%, #2a1410 100%);
+  border-color: var(--accent-warm);
+  color: var(--accent-warm);
+  font-size: 14px;
+  letter-spacing: 4px;
+  padding: 12px 18px;
 }
 .mm-btn:hover {
   background: linear-gradient(180deg, #4a2820 0%, #2a1410 100%);
@@ -666,13 +783,13 @@ body.reduce-motion .prologue-panel { animation: none; opacity: 1; }
 .mm-btn:disabled:hover { box-shadow: none; }
 .mm-delete {
   display: block;
-  margin: 16px auto 0;
+  margin: 10px auto 0;
   background: transparent;
   color: #8a6060;
   border: none;
   font-family: var(--serif-body);
   font-style: italic;
-  font-size: 13px;
+  font-size: 12px;
   letter-spacing: 1px;
   cursor: pointer;
   text-decoration: underline dotted;
@@ -682,15 +799,15 @@ body.reduce-motion .prologue-panel { animation: none; opacity: 1; }
 .mm-delete:hover { color: var(--danger); text-decoration-color: var(--danger); }
 .mm-delete:disabled { opacity: 0.55; cursor: not-allowed; text-decoration: none; color: var(--ink-faint); }
 .mm-version {
-  margin-top: 14px;
+  margin-top: 10px;
   font-family: "Courier New", monospace;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--ink-faint);
   letter-spacing: 2px;
 }
 
-/* --- Main-menu stats block --- */
-.mm-stats-slot { margin-top: 18px; }
+/* --- Main-menu stats block (compact) --- */
+.mm-stats-slot { margin-top: 10px; }
 
 /* --- "Further Chapters" coming-soon section --- */
 .mm-upcoming {
@@ -1720,10 +1837,10 @@ body.reduce-motion .map-marker { animation: none !important; }
 
 .spirit-static {
   font-family: monospace;
-  font-size: 14px;
+  font-size: 12px;
   color: #5a4850;
-  line-height: 1.3;
-  height: 100px;
+  line-height: 1.25;
+  height: 56px;
   overflow: hidden;
   white-space: pre-wrap;
 }
@@ -1733,8 +1850,20 @@ body.reduce-motion .map-marker { animation: none !important; }
   font-size: 22px;
   letter-spacing: 3px;
   color: #e8c8a0;
-  margin: 10px 0;
+  margin: 8px 0;
   min-height: 28px;
+}
+/* Spirit Box overlay sits inside .overlay-inner which is already capped at
+ * 90vh + scrolls. Tighten the device padding so the whole tool fits without
+ * scrolling on 24" monitors when the window isn't maximised. */
+#overlay-tool .device { padding: 18px 22px 16px; }
+#overlay-tool .device-screen { padding: 10px; }
+#overlay-tool .device-actions { margin-top: 10px; }
+@media (max-height: 820px) {
+  #overlay-tool .overlay-inner { padding: 18px 24px; }
+  #overlay-tool .spirit-static { height: 40px; font-size: 11px; }
+  #overlay-tool .spirit-word { font-size: 20px; margin: 6px 0; }
+  #overlay-tool h2 { font-size: 20px; margin-bottom: 8px; }
 }
 /* Color-code captured words by type — green clue, red threat, amber noise */
 .spirit-word.word-clue   { color: #60e080; text-shadow: 0 0 10px rgba(64,224,96,0.5); }
@@ -2123,6 +2252,49 @@ body.reduce-motion .ghost-flicker { animation: none; }
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
+
+/* Composure HUD bar — player-side sanity. Sits next to danger meter. */
+#hud-composure {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--serif-display);
+  font-size: 11px;
+  letter-spacing: 2px;
+  padding: 0 8px;
+  color: #8aa080;
+}
+#hud-composure-label { opacity: 0.85; }
+.hud-composure-meter { display: inline-flex; gap: 3px; }
+.hud-composure-meter .cnotch {
+  width: 8px;
+  height: 10px;
+  background: #0a1208;
+  border: 1px solid #1a2418;
+}
+.hud-composure-meter .cnotch.on { border-color: #2a4028; }
+body.composure-good .hud-composure-meter .cnotch.on { background: #7aa080; box-shadow: 0 0 4px rgba(122,160,128,0.35); }
+body.composure-rattled .hud-composure-meter .cnotch.on { background: #c8a060; box-shadow: 0 0 5px rgba(200,160,96,0.5); }
+body.composure-unravel .hud-composure-meter .cnotch.on { background: #c87040; box-shadow: 0 0 6px rgba(200,112,64,0.7); }
+body.composure-broken .hud-composure-meter .cnotch.on { background: #a02020; box-shadow: 0 0 8px rgba(160,32,32,0.85); }
+body.composure-rattled #hud-composure { color: #c8a060; }
+body.composure-unravel #hud-composure { color: #c87040; }
+body.composure-broken #hud-composure { color: #a02020; animation: dangerPulse 1.2s infinite; }
+
+/* Low-composure document & narration glitch — subtle text-shadow flicker.
+   Only kicks in at UNRAVEL / BROKEN so casual play never sees it. */
+@keyframes composureJitter {
+  0%, 100% { text-shadow: none; }
+  25% { text-shadow: 0.4px 0 0 rgba(200,80,80,0.18), -0.4px 0 0 rgba(80,160,200,0.12); }
+  50% { text-shadow: none; }
+  75% { text-shadow: -0.4px 0 0 rgba(200,80,80,0.22), 0.4px 0 0 rgba(80,160,200,0.14); }
+}
+body.composure-unravel #scene-description,
+body.composure-unravel .document-body { animation: composureJitter 5s infinite; }
+body.composure-broken #scene-description,
+body.composure-broken .document-body { animation: composureJitter 1.6s infinite; }
+body.composure-broken #scene-art { filter: contrast(1.05) saturate(0.85); }
+body.composure-broken #hud-time { animation: composureJitter 2.4s infinite; }
 
 /* Jump scare overlay */
 #overlay-scare .overlay-inner { border-color: #5a1010; }
@@ -3035,6 +3207,234 @@ body.reduce-motion .photo-badge { animation: none; }
 }
 
 .photo-review { filter: sepia(0.6) contrast(1.08) brightness(0.85); }
+
+/* ============================================================ */
+/*  RELEASE POLISH LAYER · v0.6.0                                */
+/*  Final-pass refinements applied across the entire app.        */
+/*  Keep this block at the END of style.css so it wins cascade.  */
+/* ============================================================ */
+
+/* -- 1. Type rendering ------------------------------------------------- */
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+body { font-feature-settings: "kern" 1, "liga" 1, "calt" 1, "onum" 1; }
+h1, h2, h3, h4, .mm-title, .mm-story-name, #scene-title {
+  font-feature-settings: "kern" 1, "liga" 1, "smcp" 0;
+  letter-spacing: 0.02em;
+}
+
+/* -- 2. Selection & caret colours ------------------------------------- */
+::selection            { background: rgba(212, 168, 120, 0.32); color: #fff3dc; text-shadow: none; }
+::-moz-selection       { background: rgba(212, 168, 120, 0.32); color: #fff3dc; text-shadow: none; }
+* { -webkit-tap-highlight-color: rgba(212, 168, 120, 0.15); }
+input, textarea { caret-color: var(--accent-warm); }
+
+/* -- 3. Accessibility-grade focus rings ------------------------------- *
+ * Only show the gilt ring for keyboard users (focus-visible), never for
+ * mouse clicks. Buttons & links get a soft warm outline; form controls
+ * a slightly stronger one.                                              */
+:focus { outline: none; }
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+.hotspot:focus-visible,
+.mm-btn:focus-visible,
+.mm-chapter-card:focus-visible {
+  outline: 2px solid rgba(212, 168, 120, 0.75);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(212, 168, 120, 0.18);
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent-warm);
+  outline-offset: 1px;
+}
+
+/* -- 4. Themed scrollbars (WebKit + Firefox) -------------------------- */
+* { scrollbar-width: thin; scrollbar-color: #3a2c26 #100a0a; }
+*::-webkit-scrollbar              { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track        { background: #0a0606; border-left: 1px solid #1a1010; }
+*::-webkit-scrollbar-thumb        {
+  background: linear-gradient(180deg, #4a3a30 0%, #2a1e18 100%);
+  border: 2px solid #0a0606;
+  border-radius: 5px;
+}
+*::-webkit-scrollbar-thumb:hover  { background: linear-gradient(180deg, #6a4a36 0%, #3a2a20 100%); }
+*::-webkit-scrollbar-corner       { background: #0a0606; }
+
+/* -- 5. Universal button press feedback ------------------------------- *
+ * Anything that looks button-shaped gets a subtle "pressed" sink on
+ * :active. This is the single most-felt polish on a desktop release.   */
+button, .mm-btn, .hotspot, [role="button"], .help-tab, .jtab {
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.08s ease-out, box-shadow 0.12s ease;
+  will-change: transform;
+}
+button:not(:disabled):active,
+.mm-btn:not(:disabled):active,
+.hotspot:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active,
+.help-tab:active,
+.jtab:active {
+  transform: translateY(1px);
+  filter: brightness(0.92);
+}
+button:disabled, .mm-btn:disabled { cursor: not-allowed; opacity: 0.55; }
+
+/* -- 6. Overlay (modal) entrance --------------------------------------- */
+@keyframes overlay-fade-in    { from { opacity: 0; } to { opacity: 1; } }
+@keyframes overlay-inner-rise { from { opacity: 0; transform: translateY(14px) scale(0.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.overlay:not(.hidden)              { animation: overlay-fade-in 220ms ease-out both; }
+.overlay:not(.hidden) .overlay-inner,
+.overlay:not(.hidden) > div:not(#overlay-bg) {
+  animation: overlay-inner-rise 320ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+body.reduce-motion .overlay,
+body.reduce-motion .overlay .overlay-inner { animation: none !important; }
+
+/* -- 7. Gilt-corner ornaments on key panels --------------------------- *
+ * Tiny inline-SVG corner flourishes — gives modals the bound-volume
+ * feel that horror games like Inscryption / Devotion use to suggest
+ * craftsmanship. Scoped to NON-SCROLLING surfaces so they never scroll
+ * out of view inside long modals.                                       */
+.title-panel,
+.mm-stage {
+  position: relative;
+}
+.title-panel::before,  .title-panel::after,
+.mm-stage::before,     .mm-stage::after {
+  content: "";
+  position: absolute;
+  width: 22px; height: 22px;
+  pointer-events: none;
+  opacity: 0.55;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22' fill='none' stroke='%23d4a878' stroke-width='1.1'><path d='M 1 1 L 1 8 M 1 1 L 8 1 M 1 1 Q 6 6 12 6'/><circle cx='12' cy='6' r='0.9' fill='%23d4a878' stroke='none'/></svg>");
+  background-repeat: no-repeat;
+}
+.title-panel::before, .mm-stage::before { top: 6px;    left: 6px;    }
+.title-panel::after,  .mm-stage::after  { top: 6px;    right: 6px;   transform: scaleX(-1); }
+
+/* -- 8. Refined HUD typography ---------------------------------------- */
+#hud { font-variant-numeric: tabular-nums; }
+#hud-time {
+  /* Time numerals should be monospaced-feeling for a "watch face" read. */
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  text-shadow: 0 0 8px rgba(212, 168, 120, 0.25);
+}
+#hud-location { text-shadow: 0 1px 0 rgba(0,0,0,0.6); }
+#hud-right button {
+  border-radius: 3px;
+  position: relative;
+}
+#hud-right button:active { transform: translateY(1px); }
+
+/* -- 9. Scene title — let it breathe ---------------------------------- */
+#scene-title {
+  position: relative;
+}
+#scene-title::after {
+  content: "";
+  display: block;
+  margin: 8px auto 0;
+  width: 64px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-warm) 50%, transparent);
+  opacity: 0.6;
+}
+#scene-description { max-width: 760px; }
+
+/* -- 10. Hotspot polish — subtle indented chip feel ------------------- */
+.hotspot {
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.55);
+  position: relative;
+  overflow: hidden;
+}
+.hotspot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,220,180,0.05) 0%, transparent 40%);
+  pointer-events: none;
+}
+.hotspot:hover { box-shadow: 0 2px 12px rgba(212, 168, 120, 0.12), inset 0 1px 0 rgba(255,220,180,0.08); }
+
+/* -- 11. Inventory tray — "real equipment" feel ----------------------- */
+#inventory {
+  background:
+    linear-gradient(180deg, rgba(26, 18, 16, 0.75) 0%, rgba(10, 6, 6, 0.95) 100%),
+    repeating-linear-gradient(90deg, transparent 0, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 3px);
+  border-top: 1px solid #2a1c18;
+  box-shadow: inset 0 1px 0 rgba(212, 168, 120, 0.06), 0 -4px 16px rgba(0,0,0,0.5);
+}
+.inv-label {
+  text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+}
+
+/* -- 12. Narration — typewriter-paper feel ---------------------------- */
+#narration {
+  font-feature-settings: "kern" 1, "liga" 1, "onum" 1;
+  text-rendering: optimizeLegibility;
+}
+
+/* -- 13. Image / SVG crispness ---------------------------------------- */
+svg, img { image-rendering: -webkit-optimize-contrast; }
+.room-scene { shape-rendering: geometricPrecision; }
+
+/* -- 14. Tooltip refinement ------------------------------------------- */
+[title]:hover { cursor: help; }
+button[title]:hover, .hotspot[title]:hover { cursor: pointer; }
+
+/* -- 15. Title screen — strong first impression ----------------------- */
+.mm-title {
+  text-shadow:
+    0 1px 0 #000,
+    0 0 24px rgba(212, 168, 120, 0.25),
+    0 0 48px rgba(212, 168, 120, 0.10);
+  letter-spacing: 0.18em;
+}
+.mm-chapter-card {
+  transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.3, 1), border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.mm-chapter-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.55), 0 0 0 1px rgba(212, 168, 120, 0.15);
+}
+.mm-btn-primary {
+  text-shadow: 0 1px 0 rgba(0,0,0,0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 220, 180, 0.12), 0 2px 0 rgba(0,0,0,0.35);
+}
+.mm-btn-primary:hover { box-shadow: inset 0 1px 0 rgba(255, 220, 180, 0.18), 0 4px 14px rgba(212, 168, 120, 0.22); }
+
+/* -- 16. Help / Journal tabs — proper active indicator ---------------- */
+.help-tab, .jtab {
+  position: relative;
+}
+.help-tab.active::after, .jtab.active::after {
+  content: "";
+  position: absolute;
+  left: 12%; right: 12%;
+  bottom: -1px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-warm), transparent);
+  box-shadow: 0 0 8px rgba(212, 168, 120, 0.4);
+}
+
+/* -- 17. Reduce-motion respect (the whole file) ----------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* -- 18. Print / screenshot mode -------------------------------------- *
+ * For Steam capture & marketing screenshots — hides UI chrome cleanly
+ * when body has .screenshot-mode (toggleable from devtools).            */
+body.screenshot-mode #hud,
+body.screenshot-mode #inventory,
+body.screenshot-mode #w2-fn-btn,
+body.screenshot-mode #sk-progress-text { display: none !important; }
+
 .photo-figure-layer {
   position: absolute; inset: 0;
   pointer-events: none;
@@ -3135,3 +3535,680 @@ body.reduce-motion .photo-badge { animation: none; }
   .htp-tools { grid-template-columns: 1fr 1fr; }
 }
 
+
+
+/* ====================================================================
+ * 17. PREMIUM POLISH PASS — antique frame, deeper atmosphere, and a
+ *     tension-reactive overlay that visibly escalates as the house gets
+ *     angrier. Body.dataset.tension is set by danger.js (0..3) and the
+ *     CSS below scales grain, vignette, color grade and a faint tremor.
+ * ==================================================================== */
+
+/* --- Ornate antique frame around every room scene ------------------- */
+/* A second ::before-like layer using a wrapping box-shadow technique:
+ * we re-style #scene-art to carry a richer multi-stop border treatment
+ * so each scene reads as a framed lantern-slide instead of a flat box. */
+#scene-art {
+  /* Layered frame: inner bevel (warm) + gold hairline + outer shadow */
+  border: 1px solid #5a4028;
+  outline: none;
+  box-shadow:
+    /* outer drop shadow */
+    0 14px 36px rgba(0,0,0,0.75),
+    /* thin gold hairline just inside the frame */
+    inset 0 0 0 1px rgba(220, 180, 120, 0.12),
+    /* deep inner vignette */
+    inset 0 0 120px rgba(0,0,0,0.78),
+    /* warm interior bevel */
+    inset 0 1px 0 rgba(255,220,180,0.06),
+    inset 0 -1px 0 rgba(0,0,0,0.7);
+  border-radius: 2px;
+  background: linear-gradient(180deg, #1c1418 0%, #08060a 100%);
+}
+
+/* Ornate corner flourishes — DISABLED. The previous implementation used
+ * fixed-pixel offsets from screen center, so the filigree visibly drifted
+ * out of place whenever the scene-art wasn't exactly 760px wide. The gold
+ * hairline + inner bevel on #scene-art is enough to read as "framed". */
+#scene::before, #scene::after { display: none !important; }
+
+/* --- Deeper grain + atmospheric haze ------------------------------- */
+/* We replace the existing ::before grain plate with a stronger, more
+ * irregular noise + a low-lying haze gradient. The old layer stays as
+ * backup; this just rides on top via ::before priority (we redefine it). */
+#scene-art::before {
+  /* re-declared with stronger values */
+  background:
+    /* coarser, more visible grain */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' seed='9' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.78  0 0 0 0 0.62  0 0 0 0 0.44  0 0 0 0.7 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/></svg>"),
+    /* low-lying haze at floor */
+    linear-gradient(0deg, rgba(180,150,110,0.10) 0%, rgba(180,150,110,0.03) 12%, transparent 28%),
+    /* warm candle-bleed */
+    radial-gradient(ellipse 70% 55% at 50% 105%, rgba(220, 140, 70, 0.22) 0%, rgba(120, 60, 30, 0.12) 30%, transparent 65%),
+    /* cool moon-bleed */
+    radial-gradient(ellipse 80% 40% at 50% -10%, rgba(120, 150, 180, 0.12) 0%, transparent 65%);
+  mix-blend-mode: screen;
+  opacity: 1;
+}
+
+/* --- TENSION-REACTIVE OVERLAY --------------------------------------
+ * body[data-tension] is set in renderDanger() to 0..3.
+ *   0 (QUIET)     — baseline grain & vignette
+ *   1 (WATCHING)  — slightly desaturated, grain +20%
+ *   2 (CLOSE)     — color drains, vignette tightens, faint tremor
+ *   3 (IN ROOM)   — heavy desat, hard vignette, visible tremor, red bleed
+ */
+#scene-art > svg.room-scene,
+#scene-art > div {
+  transition: filter 1.2s ease, transform 1.2s ease;
+}
+body[data-tension="0"] #scene-art > svg.room-scene { filter: contrast(1.06) saturate(0.92) brightness(1.02); }
+body[data-tension="1"] #scene-art > svg.room-scene { filter: contrast(1.08) saturate(0.78) brightness(0.98); }
+body[data-tension="2"] #scene-art > svg.room-scene { filter: contrast(1.12) saturate(0.55) brightness(0.92); }
+body[data-tension="3"] #scene-art > svg.room-scene { filter: contrast(1.18) saturate(0.32) brightness(0.84) hue-rotate(-6deg); }
+
+/* Vignette tightens with tension */
+body[data-tension="1"] #scene-art::after {
+  background:
+    radial-gradient(ellipse at center, transparent 32%, rgba(0,0,0,0.62) 92%, rgba(0,0,0,0.85) 100%),
+    linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 14%),
+    linear-gradient(0deg,   rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 12%);
+}
+body[data-tension="2"] #scene-art::after {
+  background:
+    radial-gradient(ellipse at center, transparent 24%, rgba(0,0,0,0.72) 88%, rgba(0,0,0,0.92) 100%),
+    linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 14%),
+    linear-gradient(0deg,   rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 12%);
+}
+body[data-tension="3"] #scene-art::after {
+  background:
+    /* red corner bleed at the highest tension */
+    radial-gradient(ellipse 60% 50% at 10% 50%, rgba(120, 20, 20, 0.20) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 90% 50%, rgba(120, 20, 20, 0.20) 0%, transparent 55%),
+    radial-gradient(ellipse at center, transparent 18%, rgba(0,0,0,0.80) 84%, rgba(0,0,0,0.96) 100%),
+    linear-gradient(180deg, rgba(0,0,0,0.60) 0%, rgba(0,0,0,0) 14%),
+    linear-gradient(0deg,   rgba(0,0,0,0.60) 0%, rgba(0,0,0,0) 12%);
+}
+
+/* Tremor on the scene container at high tension. Tiny — must not
+ * make the player nauseous. Honors reduce-motion. */
+@keyframes tension-tremor {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-0.4px, 0.3px); }
+  50%  { transform: translate(0.3px, -0.2px); }
+  75%  { transform: translate(-0.2px, 0.4px); }
+  100% { transform: translate(0, 0); }
+}
+body[data-tension="2"] #scene-art { animation: tension-tremor 1.6s ease-in-out infinite; }
+body[data-tension="3"] #scene-art { animation: tension-tremor 0.55s ease-in-out infinite; }
+body.reduce-motion #scene-art { animation: none !important; }
+
+/* HUD gets a subtle warning glow at IN-THE-ROOM */
+body[data-tension="3"] #hud {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 -1px 12px rgba(180,30,30,0.18);
+}
+
+/* --- Drop-cap polish on scene description -------------------------- */
+/* Already styled, but raise it visually once more at the description level */
+#scene-description {
+  text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+}
+
+/* --- Narration: a soft inset top edge so it reads as a separate panel */
+#narration {
+  box-shadow: inset 0 8px 12px -10px rgba(0,0,0,0.8);
+}
+
+/* --- Buttons: lift hover state across the board for tactility ------- */
+.hotspot-btn:hover {
+  background: linear-gradient(180deg, #322428 0%, #1c1410 100%);
+  color: var(--accent-warm);
+  border-color: var(--accent-deep);
+  box-shadow: 0 0 14px rgba(138, 96, 64, 0.35), inset 0 1px 0 rgba(255,220,180,0.10);
+  transform: translateY(-1px);
+}
+.hotspot-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 0 6px rgba(138, 96, 64, 0.20), inset 0 1px 2px rgba(0,0,0,0.4);
+}
+
+/* Hide corner ornaments on small windows where #scene-art shrinks */
+@media (max-width: 820px) {
+  #scene::before, #scene::after { display: none; }
+}
+
+
+/* ====================================================================
+ * 18. EXTRAS PASS - styles for reality warps, cursed possessions,
+ *     spirit-box question palette, and the banishment ritual banner.
+ * ==================================================================== */
+
+/* Reality warps -- a single prepended paragraph in the scene description.
+ * Italic, slightly desaturated red, with a subtle pulse on first paint. */
+.warp-line {
+  font-family: var(--serif-body, "EB Garamond", "Cormorant Garamond", serif);
+  font-style: italic;
+  color: #c89090;
+  border-left: 2px solid #6a2828;
+  padding: 6px 12px;
+  margin: 0 0 14px 0;
+  background: linear-gradient(90deg, rgba(80, 16, 16, 0.18) 0%, transparent 80%);
+  animation: warp-fade-in 1.6s ease-out;
+}
+@keyframes warp-fade-in {
+  0%   { opacity: 0; transform: translateY(-4px); filter: blur(3px); }
+  60%  { opacity: 1; transform: translateY(0);    filter: blur(0); }
+  100% { opacity: 1; }
+}
+body.reduce-motion .warp-line { animation: none; }
+
+/* Spirit box - question palette appended under the device frame */
+.sq-row {
+  margin-top: 14px;
+  padding: 10px 12px 8px;
+  background: linear-gradient(180deg, rgba(40, 24, 16, 0.55) 0%, rgba(16, 8, 4, 0.6) 100%);
+  border: 1px solid #3a2818;
+  border-radius: 2px;
+}
+.sq-label {
+  text-align: center;
+  font-family: var(--serif-display, "Cinzel", serif);
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: #8a5028;
+  margin-bottom: 8px;
+}
+.sq-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.sq-buttons button {
+  background: #1a1208;
+  border: 1px solid #4a2818;
+  color: #d4a878;
+  font-family: var(--serif-body, "EB Garamond", serif);
+  font-size: 13px;
+  padding: 7px 8px;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.sq-buttons button:hover:not(:disabled) {
+  background: #2a1a10;
+  color: #ffd498;
+  border-color: #c08040;
+}
+.sq-buttons button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.sq-hint {
+  text-align: center;
+  font-size: 10px;
+  color: #6a5040;
+  font-style: italic;
+  margin-top: 6px;
+}
+
+/* Cursed possessions -- overlay modal, antique-card aesthetic */
+.cursed-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  z-index: 250;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fade-in .25s ease-out;
+}
+.cursed-panel {
+  background: linear-gradient(180deg, #1a1208 0%, #0a0604 100%);
+  border: 1px solid #5a3018;
+  box-shadow: 0 0 0 1px rgba(220, 180, 120, 0.08) inset,
+              0 24px 40px rgba(0, 0, 0, 0.7);
+  max-width: 480px;
+  padding: 28px 30px 22px;
+  color: #d4a878;
+}
+.cursed-title {
+  font-family: var(--serif-display, "Cinzel", serif);
+  font-size: 18px;
+  letter-spacing: 5px;
+  color: #ffd498;
+  text-align: center;
+  margin-bottom: 14px;
+  border-bottom: 1px dashed #5a3018;
+  padding-bottom: 10px;
+}
+.cursed-flavor {
+  font-family: var(--serif-body, "EB Garamond", serif);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0 0 14px;
+  color: #c4a888;
+}
+.cursed-warn, .cursed-spent {
+  font-size: 12px;
+  color: #8a7565;
+  margin: 0 0 16px;
+  text-align: center;
+}
+.cursed-warn strong { color: #d04040; letter-spacing: 1px; }
+.cursed-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.cursed-actions button {
+  background: #1a1208;
+  border: 1px solid #5a3018;
+  color: #d4a878;
+  font-family: var(--serif-display, "Cinzel", serif);
+  font-size: 12px;
+  letter-spacing: 3px;
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.cursed-actions .cursed-use { color: #ffd498; border-color: #c08040; }
+.cursed-actions button:hover { background: #2a1a10; color: #ffd498; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+body.reduce-motion .cursed-overlay { animation: none; }
+
+/* Cursed/Ritual hotspots in the scene */
+.hotspot-btn.cursed-hotspot {
+  background: linear-gradient(180deg, #2a1018 0%, #14060a 100%);
+  border-color: #6a2030;
+  color: #d09898;
+  font-style: italic;
+}
+.hotspot-btn.cursed-hotspot:hover {
+  background: linear-gradient(180deg, #3a1828 0%, #1c0a10 100%);
+  color: #f0c0c0;
+  border-color: #a04050;
+}
+.hotspot-btn.cursed-hotspot.cursed-spent {
+  opacity: 0.45;
+  font-style: italic;
+  cursor: default;
+  pointer-events: none;
+}
+
+.hotspot-btn.rite-hotspot {
+  background: linear-gradient(180deg, #2a2010 0%, #14100a 100%);
+  border-color: #806020;
+  color: #ffd498;
+  font-family: var(--serif-display, "Cinzel", serif);
+  letter-spacing: 2px;
+  font-size: 13px;
+}
+.hotspot-btn.rite-hotspot:hover {
+  background: linear-gradient(180deg, #3a2c18 0%, #1a140a 100%);
+  border-color: #c08040;
+}
+.hotspot-btn.rite-hotspot.rite-ready {
+  background: linear-gradient(180deg, #3c2418 0%, #1a0c08 100%);
+  border-color: #ffd498;
+  color: #ffd498;
+  box-shadow: 0 0 14px rgba(255, 212, 152, 0.18), inset 0 1px 0 rgba(255, 220, 180, 0.12);
+  animation: rite-pulse 2.4s ease-in-out infinite;
+}
+.hotspot-btn.rite-hotspot.rite-progress {
+  opacity: 0.6;
+  cursor: default;
+}
+@keyframes rite-pulse {
+  0%, 100% { box-shadow: 0 0 14px rgba(255, 212, 152, 0.18), inset 0 1px 0 rgba(255, 220, 180, 0.12); }
+  50%      { box-shadow: 0 0 22px rgba(255, 212, 152, 0.36), inset 0 1px 0 rgba(255, 220, 180, 0.24); }
+}
+body.reduce-motion .hotspot-btn.rite-ready { animation: none; }
+
+/* Banishment banner on the verdict result */
+.rite-banner {
+  background: linear-gradient(90deg, rgba(80, 60, 20, 0.18) 0%, rgba(20, 12, 6, 0.6) 50%, rgba(80, 60, 20, 0.18) 100%);
+  border-top: 1px solid #c08040;
+  border-bottom: 1px solid #c08040;
+  padding: 14px 18px;
+  margin: 0 0 16px;
+  text-align: center;
+  font-family: var(--serif-display, "Cinzel", serif);
+  color: #ffd498;
+  letter-spacing: 4px;
+}
+.rite-banner strong { font-size: 16px; letter-spacing: 6px; }
+.rite-banner em {
+  display: block;
+  margin-top: 8px;
+  font-style: italic;
+  font-family: var(--serif-body, "EB Garamond", serif);
+  font-size: 13px;
+  color: #c4a888;
+  letter-spacing: 0;
+}
+
+
+/* ====================================================================
+ * 19. FATAL FRAME PASS - daguerreotype camera, psychometry, breath-hold
+ * ==================================================================== */
+
+/* Common ff-overlay reuses sk-overlay scaffolding from playability.js */
+.ff-overlay .ff-panel { max-width: 560px; }
+
+/* --- 19a. The Daguerreotype Plate --------------------------------- */
+.ff-dag-stage {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  margin: 12px 0 10px;
+  background: #050402;
+  border: 1px solid #3a2818;
+  box-shadow: 0 0 0 1px rgba(220, 180, 120, 0.06) inset;
+  overflow: hidden;
+  cursor: crosshair;
+}
+.ff-dag-art {
+  position: absolute; inset: 0;
+  filter: sepia(0.45) brightness(0.55) contrast(1.15);
+  opacity: 0.85;
+}
+.ff-dag-art svg { width: 100%; height: 100%; display: block; }
+.ff-dag-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 50%, transparent 35%, rgba(0,0,0,0.85) 100%);
+  pointer-events: none;
+}
+.ff-dag-label {
+  position: absolute; bottom: 6px; left: 8px;
+  color: #c8a060; font-family: 'Courier New', monospace;
+  font-size: 10px; letter-spacing: 2px;
+  background: rgba(0,0,0,0.5); padding: 2px 6px;
+  pointer-events: none;
+}
+.ff-dag-mark {
+  position: absolute;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 200, 200, 0.85) 0%, rgba(200, 60, 60, 0.55) 45%, transparent 75%);
+  box-shadow: 0 0 16px rgba(220, 80, 80, 0.7);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: ff-dag-mark-pulse 1.6s ease-in-out infinite;
+}
+@keyframes ff-dag-mark-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1);   opacity: 0.85; }
+  50%      { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
+}
+body.reduce-motion .ff-dag-mark { animation: none; }
+
+.ff-dag-reticle {
+  position: absolute;
+  width: 80px; height: 80px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: filter .15s;
+}
+.ff-dag-reticle span {
+  position: absolute;
+  width: 14px; height: 14px;
+  border: 1.5px solid #ffd498;
+  opacity: 0.85;
+}
+.ff-dag-reticle span:nth-child(1) { top: 0;    left: 0;    border-right: none; border-bottom: none; }
+.ff-dag-reticle span:nth-child(2) { top: 0;    right: 0;   border-left: none;  border-bottom: none; }
+.ff-dag-reticle span:nth-child(3) { bottom: 0; left: 0;    border-right: none; border-top: none; }
+.ff-dag-reticle span:nth-child(4) { bottom: 0; right: 0;   border-left: none;  border-top: none; }
+.ff-dag-cross {
+  position: absolute; top: 50%; left: 50%;
+  width: 2px; height: 2px; background: #ffd498;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 1px #1a0c04;
+}
+.ff-dag-reticle.locked span { border-color: #80f0a0; }
+.ff-dag-reticle.locked .ff-dag-cross { background: #80f0a0; }
+.ff-dag-reticle.locked { filter: drop-shadow(0 0 8px rgba(128, 240, 160, 0.6)); }
+
+.ff-dag-meters {
+  display: flex; gap: 14px; margin-bottom: 10px;
+}
+.ff-dag-meter { flex: 1; }
+.ff-dag-mlabel {
+  display: block;
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: #8a5028;
+  margin-bottom: 3px;
+}
+.ff-dag-mbar {
+  height: 10px;
+  background: #1a0a04;
+  border: 1px solid #3a1808;
+  overflow: hidden;
+}
+.ff-dag-mfill {
+  height: 100%;
+  width: 0;
+  transition: width .12s linear;
+}
+.ff-dag-mfill.plate { background: linear-gradient(90deg, #40c060, #a0ffb0); box-shadow: 0 0 8px rgba(64, 192, 96, 0.5) inset; }
+.ff-dag-mfill.dread { background: linear-gradient(90deg, #6a2020, #d04040); box-shadow: 0 0 8px rgba(208, 64, 64, 0.5) inset; }
+
+.ff-dag-expose {
+  background: linear-gradient(180deg, #3c2418 0%, #1a0c08 100%) !important;
+  border-color: #ffd498 !important;
+  color: #ffd498 !important;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 4px !important;
+}
+.ff-dag-expose:hover {
+  box-shadow: 0 0 14px rgba(255, 212, 152, 0.4);
+}
+
+/* Long-exposure button inside the Film Camera tool */
+.ff-dag-btn {
+  background: linear-gradient(180deg, #2a1a10, #14080a) !important;
+  border: 1px solid #5a3018 !important;
+  color: #ffd498 !important;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 2px;
+  font-size: 11px !important;
+}
+.ff-dag-btn:hover {
+  border-color: #c08040 !important;
+  color: #ffe8c0 !important;
+  background: linear-gradient(180deg, #3a261c, #1a0c10) !important;
+}
+
+/* --- 19b. Psychometry -------------------------------------------- */
+.ff-psych-panel { max-width: 520px; }
+.ff-psych-stage {
+  display: flex;
+  gap: 12px;
+  margin: 14px 0 12px;
+}
+.ff-psych-lane {
+  flex: 1;
+  height: 160px;
+  position: relative;
+  background: linear-gradient(180deg, #1a0c08 0%, #050402 100%);
+  border: 1px solid #3a2818;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.ff-psych-lane:hover { border-color: #6a4028; }
+.ff-psych-glow {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 70%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 220, 180, 0.85) 0%, rgba(200, 140, 90, 0.45) 40%, transparent 75%);
+  filter: blur(3px);
+  transform: translate(-50%, -50%) scale(0.7);
+  pointer-events: none;
+  transition: opacity .08s linear;
+}
+.ff-psych-line {
+  position: absolute;
+  left: 6px; right: 6px;
+  top: 50%;
+  height: 2px;
+  background: rgba(255, 240, 220, 0.5);
+  box-shadow: 0 0 6px rgba(255, 240, 220, 0.6);
+  pointer-events: none;
+}
+.ff-psych-lock {
+  position: absolute;
+  top: 6px; right: 8px;
+  color: #6a5040;
+  font-family: 'Cinzel', serif;
+  font-size: 16px;
+}
+.ff-psych-lane.hit-great { border-color: #80c090; }
+.ff-psych-lane.hit-great .ff-psych-lock { color: #a0ffb0; }
+.ff-psych-lane.hit-ok    { border-color: #c08040; }
+.ff-psych-lane.hit-ok    .ff-psych-lock { color: #ffd498; }
+.ff-psych-lane.hit-miss  { border-color: #6a2030; }
+.ff-psych-lane.hit-miss  .ff-psych-lock { color: #d04040; }
+.ff-psych-lane.hit-great, .ff-psych-lane.hit-ok, .ff-psych-lane.hit-miss { cursor: default; }
+.ff-psych-lane.hit-great .ff-psych-glow, .ff-psych-lane.hit-ok .ff-psych-glow, .ff-psych-lane.hit-miss .ff-psych-glow { animation: none; }
+
+.ff-psych-readout {
+  background: rgba(20, 12, 6, 0.6);
+  border: 1px dashed #3a2818;
+  padding: 12px 14px;
+  font-family: var(--serif-body, 'EB Garamond', serif);
+  font-size: 14px;
+  line-height: 1.5;
+  color: #c4a888;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.ff-psych-flavor { display: block; margin-bottom: 8px; color: #8a7565; }
+.ff-psych-fragment { display: block; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #3a2818; }
+.ff-psych-fragment.f-great { color: #d4a878; }
+.ff-psych-fragment.f-ok    { color: #b09080; }
+.ff-psych-fragment.f-miss  { color: #7a6555; font-style: italic; }
+
+/* Psychometry hotspot in scene */
+.hotspot-btn.ff-psych-hotspot {
+  background: linear-gradient(180deg, #1c1418 0%, #0c0608 100%);
+  border-color: #6a4060;
+  color: #d0b0c8;
+  font-style: italic;
+}
+.hotspot-btn.ff-psych-hotspot:hover {
+  background: linear-gradient(180deg, #2a1c28 0%, #16080e 100%);
+  color: #f0d0e0;
+  border-color: #a06090;
+}
+.hotspot-btn.ff-psych-hotspot.ff-psych-used {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* --- 19c. Hold Your Breath -------------------------------------- */
+.ff-breath {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  z-index: 240;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fade-in .35s ease-out;
+}
+.ff-breath-panel {
+  background: linear-gradient(180deg, #0a0604 0%, #050402 100%);
+  border: 1px solid #5a3018;
+  box-shadow: 0 0 0 1px rgba(220, 180, 120, 0.06) inset,
+              0 24px 40px rgba(0, 0, 0, 0.85);
+  max-width: 460px;
+  padding: 24px 26px 20px;
+  color: #d4a878;
+}
+.ff-breath-title {
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  letter-spacing: 8px;
+  text-align: center;
+  color: #ffd498;
+  margin-bottom: 8px;
+}
+.ff-breath-sub {
+  font-family: var(--serif-body, 'EB Garamond', serif);
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  color: #b09080;
+  margin-bottom: 16px;
+}
+.ff-breath-cue { color: #80f0a0; font-weight: bold; letter-spacing: 2px; }
+.ff-breath-bar { margin-bottom: 14px; }
+.ff-breath-track {
+  position: relative;
+  height: 26px;
+  background: #1a0a04;
+  border: 1px solid #3a1808;
+  overflow: hidden;
+}
+.ff-breath-band {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: linear-gradient(180deg, rgba(64, 192, 96, 0.5), rgba(128, 240, 160, 0.85));
+  box-shadow: 0 0 12px rgba(128, 240, 160, 0.6) inset;
+}
+.ff-breath-needle {
+  position: absolute;
+  top: -3px; bottom: -3px;
+  width: 3px;
+  background: #ffd498;
+  box-shadow: 0 0 8px #ffd498;
+  transform: translateX(-50%);
+}
+.ff-breath-hold {
+  height: 76px;
+  border: 1.5px dashed #5a3018;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 10px;
+  font-family: 'Cinzel', serif;
+  font-size: 16px;
+  letter-spacing: 6px;
+  color: #8a5028;
+  transition: all .15s;
+}
+.ff-breath-hold:hover { color: #d4a878; border-color: #c08040; }
+.ff-breath-hold.active {
+  background: rgba(80, 60, 20, 0.18);
+  border-style: solid;
+  border-color: #c08040;
+  color: #ffd498;
+  box-shadow: 0 0 14px rgba(255, 212, 152, 0.2) inset;
+}
+.ff-breath-hold.done-clean { background: rgba(64, 192, 96, 0.18); border-color: #80c090; color: #a0ffb0; }
+.ff-breath-hold.done-early, .ff-breath-hold.done-late, .ff-breath-hold.done-fled {
+  background: rgba(192, 64, 64, 0.18); border-color: #d04040; color: #ffb0b0;
+}
+.ff-breath-skip {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: 1px solid #4a2818;
+  color: #8a7565;
+  font-family: var(--serif-body, 'EB Garamond', serif);
+  font-style: italic;
+  font-size: 11px;
+  padding: 6px;
+  cursor: pointer;
+}
+.ff-breath-skip:hover { color: #d4a878; border-color: #6a4028; }

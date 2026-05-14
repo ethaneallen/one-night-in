@@ -52,8 +52,15 @@ function loadStory(id) {
   if (story.wordPools)      Object.assign(WORD_POOLS, story.wordPools);
   if (story.dialogue)       Object.assign(CALDER_DIALOGUE, story.dialogue);
   if (story.contradictions) Object.assign(CALDER_CONTRADICTIONS, story.contradictions);
+  if (story.contraDocs && typeof CONTRA_DOCS !== "undefined")   Object.assign(CONTRA_DOCS, story.contraDocs);
+  if (story.contraDecoys && typeof CONTRA_DECOYS !== "undefined") CONTRA_DECOYS.push(...story.contraDecoys);
+  if (story.examinations && typeof EXAMINATIONS !== "undefined") Object.assign(EXAMINATIONS, story.examinations);
   if (story.scares)         SIGNATURE_SCARES.push(...story.scares);
   if (story.startRoom)      state.currentRoom = story.startRoom;
+  // Stories may provide their own map ordering (an array of room ids in
+  // the order they should appear on the map). renderMap() reads this.
+  if (story.roomOrder)      state._roomOrder = story.roomOrder.slice();
+  else                      state._roomOrder = null;
   state._story = id;
   return true;
 }
@@ -75,7 +82,12 @@ registerStory({
 });
 
 // Inject a story picker into the title screen when 2+ stories exist.
+// NOTE: As of v0.6.0 the main menu owns chapter selection via its chapter-card
+// grid (see index.html #mm-chapter-picker) — this legacy <select> injection is
+// suppressed to avoid a duplicate picker on the prologue.
 (function injectStoryPicker() {
+  return; // intentionally disabled; main menu drives selection
+  /* legacy code retained for reference
   const stories = listStories();
   if (stories.length < 2) return;
   const panel = document.querySelector(".title-panel");
@@ -90,4 +102,5 @@ registerStory({
     </select>
   `;
   panel.insertBefore(wrap, btn);
+  */
 })();

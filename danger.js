@@ -44,6 +44,23 @@ function checkChapterCard() {
   for (const c of CHAPTERS) {
     if (state.timeMinutes >= c.atMinutes && !_shownIntertitles.has("chapter:" + c.atMinutes)) {
       showIntertitle(c.prefix, c.body, { once: "chapter:" + c.atMinutes });
+      // One-shot reactive flourish: at midnight, if the player set their
+      // detective name in settings, the house whispers it back to them.
+      if (c.atMinutes === 24 * 60 && !state._whisperedName) {
+        state._whisperedName = true;
+        const nm = (typeof settings !== "undefined" && settings.detectiveName)
+          ? String(settings.detectiveName).trim()
+          : "";
+        if (nm && typeof audio !== "undefined" && audio.whisperName) {
+          setTimeout(() => {
+            audio.whisperName(nm);
+            if (typeof narrate === "function") {
+              narrate("<em>A voice, very close, says your name. You did not, you are quite sure, give it to anyone here.</em>");
+            }
+            if (typeof drainComposure === "function") drainComposure(8, "the house knows your name");
+          }, 2500);
+        }
+      }
       return;
     }
   }
@@ -74,6 +91,10 @@ function renderDanger() {
   el.className = "";
   el.classList.add(t.cls);
   const a = state.aggression || 0;
+  // Mirror the tier index onto <body data-tension="N"> so the global CSS
+  // polish layer can react: grain, vignette, color drain, tremor.
+  const tierIdx = DANGER_TIERS.indexOf(t);
+  try { document.body.dataset.tension = String(Math.max(0, tierIdx)); } catch (e) {}
   el.title = `Aggression: ${a} / 10 — each notch is 1 point. Tier: ${t.label.replace(/—/g, "").trim()}`;
   // Meter: 10 notches, lit to current aggression value (clamped to 10).
   if (meterEl) {
@@ -87,6 +108,11 @@ function renderDanger() {
   const idx = DANGER_TIERS.indexOf(t);
   if (idx > lastTierIndex && state.calderLeft) {
     narrate("[" + t.intro + "]");
+    // Reactive audio: tier climb dips the room bed and bends it downward
+    if (typeof audio !== "undefined") {
+      if (audio.duckBed) audio.duckBed(0.4 + idx * 0.1, 1800);
+      if (audio.warpBed) audio.warpBed(60 + idx * 50, 2500);
+    }
   }
   // First-time-tier intertitles
   if (idx > lastTierIndex && state.calderLeft) {
@@ -94,11 +120,20 @@ function renderDanger() {
       showIntertitle("A QUESTION OF PROXIMITY",
         "<em>The house has formed, one regrets to note, an opinion. And the opinion concerns you.</em>",
         { once: "tier_close" });
+      // Composure shake on entering CLOSE
+      if (typeof drainComposure === "function") drainComposure(8, "you crossed a threshold of distance");
     } else if (idx === 3) {
       showIntertitle("IN THE ROOM WITH YOU",
         "<em>Matters have progressed. Further provocation is, with all respect, not advised.</em>",
         { once: "tier_in_room" });
+      // Start the heartbeat layer at tier 4
+      if (typeof audio !== "undefined" && audio.startHeartbeat) audio.startHeartbeat();
+      if (typeof drainComposure === "function") drainComposure(12, "the thing in the room with you");
     }
+  }
+  // Drop heartbeat when we relax below CLOSE
+  if (idx < 3 && lastTierIndex >= 3 && typeof audio !== "undefined" && audio.stopHeartbeat) {
+    audio.stopHeartbeat();
   }
   lastTierIndex = idx;
   const hv = document.getElementById("heartbeat-vignette");
@@ -145,14 +180,14 @@ function startAmbientTicker() {
     const post3AM  = state.timeMinutes >= 24 * 60 + 180;
     const post4AM  = state.timeMinutes >= 24 * 60 + 240;
     // Accelerating arc: each threshold ~halves the interval
-    let base = 30000 - tier * 5000 + Math.random() * 15000;
-    if (post2AM)  base *= 0.55;  // 2 AM: ~roughly doubled frequency
-    if (post3AM)  base *= 0.7;   // 3 AM: another 30% tighter
-    if (post4AM && state._elizaChoice !== "yes") base *= 0.6;
+    let base = 50000 - tier * 6000 + Math.random() * 20000;
+    if (post2AM)  base *= 0.65;  // 2 AM: tighter
+    if (post3AM)  base *= 0.75;  // 3 AM: another 25% tighter
+    if (post4AM && state._elizaChoice !== "yes") base *= 0.7;
     ambientTickerId = setTimeout(() => {
       fireDisturbance();
       scheduleNext();
-    }, Math.max(5000, base));
+    }, Math.max(12000, base));
   }
   scheduleNext();
 }
@@ -318,9 +353,38 @@ function stopAmbientTicker() { if (ambientTickerId) clearTimeout(ambientTickerId
 function fireDisturbance() {
   if (!state.calderLeft || state.endDialog) return;
   const pool = DISTURBANCES[state.truth] || DISTURBANCES.debunked;
-  const d = pool[Math.floor(Math.random() * pool.length)];
+  if (!pool.length) return;
+  // Track the last few disturbance texts so the same line doesn't repeat
+  // back-to-back — that was getting noisy at low truths with short pools.
+  if (!state._recentDisturb) state._recentDisturb = [];
+  const recent = state._recentDisturb;
+  const fresh = pool.filter(d => !recent.includes(d.text));
+  const candidates = fresh.length ? fresh : pool;
+  const d = candidates[Math.floor(Math.random() * candidates.length)];
+  recent.push(d.text);
+  // Remember the last min(3, pool.length-1) so we always have at least
+  // one option that isn't blocked.
+  const cap = Math.max(1, Math.min(3, pool.length - 1));
+  while (recent.length > cap) recent.shift();
   audio.sfx(d.sfx);
-  narrate("[" + d.text + "]");
+  // Ambient flavour shouldn't cut off the player reading a room/document.
+  // Skip TTS entirely if narration is already speaking; the text still
+  // appears in the log either way.
+  if (typeof tts !== "undefined" && window.speechSynthesis && window.speechSynthesis.speaking) {
+    // Render the text without speaking it.
+    const n = document.getElementById("narration");
+    if (n) {
+      const p = document.createElement("p");
+      p.innerHTML = ("[" + d.text + "]")
+        .replace(/&/g, "&amp;")
+        .replace(/<(?!\/?(?:em|strong|b|i|u)\b)/g, "&lt;");
+      n.appendChild(p);
+      n.scrollTop = n.scrollHeight;
+      while (n.children.length > 6) n.removeChild(n.firstChild);
+    }
+    return;
+  }
+  narrate("[" + d.text + "]", { preempt: false });
 }
 
 function startHeartbeatTicker() {
@@ -339,10 +403,40 @@ function stopHeartbeatTicker() { if (heartbeatTickerId) clearTimeout(heartbeatTi
 
 function bumpAggression(n, reason) {
   if (!state.calderLeft) return;
+  const prev = state.aggression || 0;
   state.aggression = Math.max(0, (state.aggression || 0) + n);
   if (state.aggression >= 9) state._everMaxAgg = true;
   renderDanger();
   if (reason && n >= 2) narrate(`[Aggression rises: ${reason}]`);
+  if (n >= 2 && typeof composureOnNarrativeBeat === "function") {
+    composureOnNarrativeBeat(Math.min(5, Math.ceil(n / 2)));
+  }
+  // Forced retreat: hitting aggression 10 for the first time kicks the
+  // investigator back to a safe room. Major composure drain. One-shot.
+  if (prev < 10 && state.aggression >= 10 && !state._forcedRetreatFired) {
+    state._forcedRetreatFired = true;
+    const storyId = state._story || "ashgrove";
+    const safeRoom = storyId === "wyndmere" ? "wm_foyer" : "entry_hall";
+    if (typeof showIntertitle === "function") {
+      showIntertitle("THE HOUSE EVICTS YOU",
+        "<em>You are, abruptly, somewhere else \u2014 the front of the house, or as near to it as the corridor permits. You did not choose to come. You will not, for the moment, argue with the choice that was made for you.</em>",
+        { once: "forced_retreat" });
+    }
+    if (typeof drainComposure === "function") drainComposure(25, "the house refused you a room");
+    if (typeof audio !== "undefined") {
+      if (audio.warpBed) audio.warpBed(300, 4000);
+      if (audio.duckBed) audio.duckBed(0.75, 2500);
+      if (audio.sfx) audio.sfx("screech");
+    }
+    setTimeout(() => {
+      if (typeof travelTo === "function") {
+        try { travelTo(safeRoom, true); } catch (e) {}
+      }
+    }, 1200);
+    // Bleed off some aggression so the game isn't permanently stuck
+    state.aggression = 7;
+    renderDanger();
+  }
   maybeFireScare();
 }
 
@@ -639,6 +733,9 @@ function doRest() {
   relaxAggression(2);
   state._lastRestAt = state.timeMinutes;
   state._everRested = true;
+  // Composure: rest restores nerves. More effective when you're rattled.
+  if (typeof composureOnRest === "function") composureOnRest();
+  else if (typeof bumpComposure === "function") bumpComposure(20, "you breathed");
   if (Math.random() < 0.25 && state.truth !== "debunked") {
     narrate("When you open them, something in the room is different. You can't say what.");
   } else {
@@ -793,6 +890,10 @@ function pickThreatForRoom(roomId) {
 
 function fireThreatPrompt(prompt) {
   audio.sfx("breath");
+  // Reactive audio: duck the room and bend it down for dread
+  if (audio.duckBed) audio.duckBed(0.6, 2500);
+  if (audio.warpBed) audio.warpBed(120, 3000);
+  if (typeof composureOnThreatPrompt === "function") composureOnThreatPrompt();
   const body = document.getElementById("scare-body");
   body.innerHTML = `
     <h2>Something is happening.</h2>
@@ -828,6 +929,10 @@ function miniJumpScare() {
   js.classList.remove("hidden");
   document.body.classList.add("screen-shake");
   audio.sfx("screech");
+  // Reactive audio: hard duck + warp the bed downward on jump
+  if (audio.duckBed) audio.duckBed(0.85, 900);
+  if (audio.warpBed) audio.warpBed(250, 1500);
+  if (typeof composureOnScare === "function") composureOnScare(15);
   setTimeout(() => {
     js.classList.add("hidden");
     document.body.classList.remove("screen-shake");
@@ -847,26 +952,48 @@ function resolveThreatChoice(choice) {
     if (choice.safe) {
       if (debugOn) narrate(`[DEBUG] Threat resolver: you picked the SAFE choice. -3 aggression, no death possible.`);
       relaxAggression(3);
+      // A clean save also relaxes the near-miss counter a little.
+      if (window.PLAY && PLAY.nearMisses) PLAY.nearMisses = Math.max(0, PLAY.nearMisses - 1);
     } else {
       if (state.truth === "haunted") {
         if (debugOn) narrate(`[DEBUG] Threat resolver: truth=HAUNTED + unsafe choice → death.`);
         killPlayer(choice.result);
-      } else if (state.truth === "partial") {
-        // Mini jump scare + narration + kept aggression. No death.
-        if (debugOn) narrate(`[DEBUG] Threat resolver: truth=PARTIAL + unsafe choice → near-miss with jump scare (no death).`);
-        miniJumpScare();
-        setTimeout(() => {
-          narrate("<em>Something rushes past you — cold, heavy, and gone before you see it. You are still here. Somehow.</em>");
-          bumpAggression(2, "you almost didn't make it");
-        }, 750);
       } else {
-        // Debunked: panic-attack with scare still triggers, but it's your brain.
-        if (debugOn) narrate(`[DEBUG] Threat resolver: truth=DEBUNKED + unsafe choice → panic attack with jump scare (no death).`);
+        // Partial / debunked: the scare itself isn't lethal, but the wrong
+        // choice costs something real. Track near-misses across the run —
+        // every 2 burns a candle wick (rest charge); if there are no wicks
+        // left and the player makes another wrong call, terror kills them.
+        if (!window.PLAY) window.PLAY = { restsLeft: 0, restsMax: 0, nearMisses: 0 };
+        PLAY.nearMisses = (PLAY.nearMisses || 0) + 1;
         miniJumpScare();
+        const everyOther = (PLAY.nearMisses % 2 === 0);
+        const noWicks = (PLAY.restsLeft || 0) <= 0;
+
         setTimeout(() => {
-          narrate("<em>Your pulse hammers. For half a second you were certain something was on you. Then the feeling passes.</em>");
-          bumpAggression(1, "adrenaline");
-          logEvidence("Environmental", "Panic response — brain filled in a threat that wasn't there.");
+          if (everyOther && !noWicks) {
+            PLAY.restsLeft = Math.max(0, (PLAY.restsLeft || 0) - 1);
+            if (typeof renderHud === "function") renderHud();
+            if (state.truth === "partial") {
+              narrate("<em>Something rushed past you — cold, heavy, and gone. Your candle gutters and is half its size. <strong>A wick is spent.</strong></em>");
+            } else {
+              narrate("<em>Your pulse hammers. The candle in your hand wavers and a wick is spent to the wax. <strong>Your nerves are wearing.</strong></em>");
+              logEvidence("Environmental", "Panic response — brain filled in a threat that wasn't there.");
+            }
+            bumpAggression(3, "you almost didn't make it");
+          } else if (everyOther && noWicks) {
+            // Out of wicks, another wrong call — terror catches up.
+            if (debugOn) narrate(`[DEBUG] Threat resolver: out of wicks + another wrong call → terror death.`);
+            killPlayer("Your last candle was already spent. The next wrong step caught you. Your heart, which you have been pushing too hard for hours, simply stopped.");
+          } else {
+            // Odd-numbered near-miss: warning shot only.
+            if (state.truth === "partial") {
+              narrate("<em>Something rushed past you — cold, heavy, and gone before you saw it. You are still here. Somehow. <strong>One more bad call and a candle burns down.</strong></em>");
+            } else {
+              narrate("<em>Your pulse hammers. For half a second you were certain something was on you. <strong>One more bad call and a candle burns down.</strong></em>");
+              logEvidence("Environmental", "Panic response — adrenaline spike.");
+            }
+            bumpAggression(2, "adrenaline");
+          }
         }, 750);
       }
     }
@@ -939,6 +1066,11 @@ function killPlayer(cause) {
   }, 1500);
 }
 function deathFlavor() {
+  const _sId = (typeof state !== "undefined" && state._story) || "ashgrove";
+  if (_sId === "wyndmere") {
+    if (state.truth === "haunted") return "Lake Wyndmere has taken another. The solicitor's account is settled. The water resumes its surface.";
+    return "They found you at first light, on the shore. Cause of death: drowning, by water taken into the lungs. The Hollow stays closed for the season.";
+  }
   if (state.truth === "haunted") return "Ashgrove House has claimed another. The trust renews. The executor is satisfied.";
   if (state.truth === "partial") return "Bad luck. Or something.";
   return "They found you at dawn. Cause of death: acute cardiac event. The executor pays the estate. The house stays closed.";
