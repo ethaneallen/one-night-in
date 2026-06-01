@@ -57,10 +57,6 @@ You are a paranormal investigator, engaged by an unnamed executor to spend one n
 - Key stored only in the player's browser, sent only to the chosen provider. No server middleman.
 - Optional and gated — the game works identically without it.
 
-### Easter eggs
-- **"COME AT ME, BRO!"** — a Call Out option. The house replies, in your grandmother's voice: *"Don't be that guy."*
-- **Five rapid clicks on the Settings title** unlocks the debug panel (password: `iddqd`).
-
 ## Running it
 
 Open `html-game/index.html` in a modern browser (Chrome, Edge, Firefox, Safari). That's the whole install. No build step, no dependencies.
