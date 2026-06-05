@@ -10,6 +10,10 @@ An anthology of haunted-house investigations. Each chapter is a self-contained n
 
 You are a paranormal investigator, engaged by an unnamed executor to spend one night alone in Ashgrove House. By sunrise you must deliver a verdict: **Haunted**, **Partially Haunted**, or **Debunked**. The house is assigned one of these three truths at random at the start of every run. You are not told which.
 
+
+<img width="1734" height="897" alt="image" src="https://github.com/user-attachments/assets/19324feb-1c68-404f-a12d-9378a4e70fb7" />
+
+
 ---
 
 ## Features
